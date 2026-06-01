@@ -4,7 +4,8 @@ data class Workplace(
     val id: Long = 0,
     val name: String,
     val startDate: Long,
-    val status: String // "WORKING", "PENDING", "FINISHED"
+    val status: String, // "WORKING", "PENDING", "FINISHED"
+    val totalDays: Int = 0 // ADD THIS LINE (default to 0)
 )
 
 data class WorkRecord(

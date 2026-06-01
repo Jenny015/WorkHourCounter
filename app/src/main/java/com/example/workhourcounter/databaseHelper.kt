@@ -79,20 +79,53 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     fun getAllWorkplaces(): List<Workplace> {
         val list = mutableListOf<Workplace>()
         val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_WORKPLACE", null)
+
+        // SQL query sorting by status custom order, then by start date descending
+        val query = """
+        SELECT * FROM $TABLE_WORKPLACE
+        ORDER BY 
+            CASE $WP_STATUS
+                WHEN '主力盤' THEN 1
+                WHEN '較少去' THEN 2
+                WHEN '已起貨' THEN 3
+                ELSE 4
+            End ASC,
+            $WP_START_DATE DESC
+    """.trimIndent()
+
+        val cursor = db.rawQuery(query, null)
 
         if (cursor.moveToFirst()) {
             do {
+                val workplaceId = cursor.getLong(cursor.getColumnIndexOrThrow(WP_ID))
+
+                // Get total work days for this specific workplace
+                val totalDays = getWorkDaysCount(workplaceId)
+
                 val workplace = Workplace(
-                    id = cursor.getLong(cursor.getColumnIndexOrThrow(WP_ID)),
+                    id = workplaceId,
                     name = cursor.getString(cursor.getColumnIndexOrThrow(WP_NAME)),
                     startDate = cursor.getLong(cursor.getColumnIndexOrThrow(WP_START_DATE)),
-                    status = cursor.getString(cursor.getColumnIndexOrThrow(WP_STATUS))
+                    status = cursor.getString(cursor.getColumnIndexOrThrow(WP_STATUS)),
+                    totalDays = totalDays // We will add this field to our model next
                 )
                 list.add(workplace)
             } while (cursor.moveToNext())
         }
         cursor.close()
         return list
+    }
+
+    // Helper function to count rows in the record table for a workplace
+    private fun getWorkDaysCount(workplaceId: Long): Int {
+        val db = this.readableDatabase
+        val query = "SELECT COUNT(*) FROM $TABLE_RECORD WHERE $REC_WP_ID = ?"
+        val cursor = db.rawQuery(query, arrayOf(workplaceId.toString()))
+        var count = 0
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0)
+        }
+        cursor.close()
+        return count
     }
 }

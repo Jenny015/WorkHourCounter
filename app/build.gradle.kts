@@ -6,12 +6,12 @@ plugins {
 android {
     namespace = "com.example.workhourcounter"
     compileSdk {
-        version = release(35)
+        version = release(36)
     }
 
     defaultConfig {
         applicationId = "com.example.workhourcounter"
-        minSdk = 35
+        minSdk = 30
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
