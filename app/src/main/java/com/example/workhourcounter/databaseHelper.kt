@@ -155,4 +155,31 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             db.endTransaction()
         }
     }
+
+    fun getRecordsForWorkplace(workplaceId: Long): List<WorkRecord> {
+        val list = mutableListOf<WorkRecord>()
+        val db = this.readableDatabase
+        val query = """
+        SELECT * FROM $TABLE_RECORD 
+        WHERE $REC_WP_ID = ? 
+        ORDER BY $REC_DATE DESC
+    """.trimIndent()
+
+        val cursor = db.rawQuery(query, arrayOf(workplaceId.toString()))
+        if (cursor.moveToFirst()) {
+            do {
+                val record = WorkRecord(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow(REC_ID)),
+                    workplaceId = cursor.getLong(cursor.getColumnIndexOrThrow(REC_WP_ID)),
+                    date = cursor.getLong(cursor.getColumnIndexOrThrow(REC_DATE)),
+                    shiftType = cursor.getString(cursor.getColumnIndexOrThrow(REC_SHIFT_TYPE)),
+                    baseHours = cursor.getFloat(cursor.getColumnIndexOrThrow(REC_BASE_HOURS)),
+                    otHours = cursor.getFloat(cursor.getColumnIndexOrThrow(REC_OT_HOURS))
+                )
+                list.add(record)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
 }

@@ -41,4 +41,8 @@ class WorkplaceViewModel(application: Application) : AndroidViewModel(applicatio
         dbHelper.deleteWorkplaceWithRecords(id)
         loadWorkplaces() // Refresh the list
     }
+
+    fun getRecordsForWorkplace(workplaceId: Long): List<WorkRecord> {
+        return dbHelper.getRecordsForWorkplace(workplaceId)
+    }
 }

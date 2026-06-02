@@ -1,20 +1,28 @@
 package com.example.workhourcounter.screens
 
+import android.icu.text.SimpleDateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.example.workhourcounter.Workplace
 import com.example.workhourcounter.WorkplaceViewModel
+import java.util.Date
+import java.util.Locale
+
+enum class ExecutionMode { NORMAL, PENDING_EDIT, PENDING_DELETE }
 
 @Composable
 fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
@@ -29,13 +37,16 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
     var workplaceToDelete by remember { mutableStateOf<Workplace?>(null) }
     var deleteConfirmationInput by remember { mutableStateOf("") }
 
+    var currentMode by remember { mutableStateOf(ExecutionMode.NORMAL) }
+    var workplaceForHistory by remember { mutableStateOf<Workplace?>(null) }
+
     val statusOptions = listOf("主力盤", "較少去", "已起貨")
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(text = "工作地盤管理", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // --- ADD NEW WORKPLACE FORM ---
+        // --- FORM PANEL ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -113,9 +124,56 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                 }
             }
         }
-
+    }
         Spacer(modifier = Modifier.height(24.dp))
-        Text("你的工作地點", style = MaterialTheme.typography.titleLarge)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("你的工作地點", style = MaterialTheme.typography.titleLarge)
+            Row {
+                // Edit Phase Toggle
+                IconButton(
+                    onClick = {
+                        currentMode = if (currentMode == ExecutionMode.PENDING_EDIT) ExecutionMode.NORMAL else ExecutionMode.PENDING_EDIT
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = if (currentMode == ExecutionMode.PENDING_EDIT) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                    )
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "開啟編輯地盤模式")
+                }
+
+                // Delete Phase Toggle
+                IconButton(
+                    onClick = {
+                        currentMode = if (currentMode == ExecutionMode.PENDING_DELETE) ExecutionMode.NORMAL else ExecutionMode.PENDING_DELETE
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = if (currentMode == ExecutionMode.PENDING_DELETE) MaterialTheme.colorScheme.errorContainer else Color.Transparent
+                    )
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = "開啟刪除地盤模式")
+                }
+            }
+        }
+        // Action Status Warning Banner
+        if (currentMode != ExecutionMode.NORMAL) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (currentMode == ExecutionMode.PENDING_EDIT) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+                ),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+            ) {
+                Text(
+                    text = if (currentMode == ExecutionMode.PENDING_EDIT) "🔧 點擊一個地盤以編輯." else "⚠️ 點擊一個地盤以刪除.",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally)
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
 
         // --- DYNAMIC WORKPLACE LIST ---
@@ -133,21 +191,95 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     WorkplaceItemRow(
                         workplace = workplace,
                         onCardClick = {
-                            // When clicked, populate the form above for editing
-                            editingWorkplaceId = workplace.id
-                            nameInput = workplace.name
-                            statusInput = workplace.status
-                        },
-                        onDeleteClick = {
-                            // Trigger deletion dialog pipeline
-                            workplaceToDelete = workplace
-                            deleteConfirmationInput = ""
+                            // Route interaction based on current active execution engine state
+                            when (currentMode) {
+                                ExecutionMode.PENDING_EDIT -> {
+                                    editingWorkplaceId = workplace.id
+                                    nameInput = workplace.name
+                                    statusInput = workplace.status
+                                    currentMode = ExecutionMode.NORMAL // Clear immediately
+                                }
+                                ExecutionMode.PENDING_DELETE -> {
+                                    workplaceToDelete = workplace
+                                    deleteConfirmationInput = ""
+                                    currentMode = ExecutionMode.NORMAL // Clear immediately
+                                }
+                                ExecutionMode.NORMAL -> {
+                                    workplaceForHistory = workplace // Launch record history popup
+                                }
+                            }
                         }
                     )
                 }
             }
         }
-    }
+
+        // --- POPUP DIALOG: HISTORY LIST VIEW ---
+        workplaceForHistory?.let { workplace ->
+            val records = remember(workplace.id) { viewModel.getRecordsForWorkplace(workplace.id) }
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+            Dialog(onDismissRequest = { workplaceForHistory = null }) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().fillMaxHeight(0.7f).padding(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        // Dialog title bar with dismiss button
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(text = workplace.name, style = MaterialTheme.typography.titleLarge)
+                                Text(text = "出勤記錄", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            }
+                            IconButton(onClick = { workplaceForHistory = null }) {
+                                Icon(Icons.Default.Close, contentDescription = "關閉")
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Divider()
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        if (records.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                                Text("此地盤暫沒有任何出勤記錄", color = Color.Gray)
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                items(records) { log ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Left side: Date string formatted neatly
+                                        Text(
+                                            text = dateFormat.format(Date(log.date)),
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        // Right side: Calculated cumulative work hours
+                                        Text(
+                                            text = "${log.baseHours + log.otHours} hrs",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                    Divider(color = MaterialTheme.colorScheme.surfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         workplaceToDelete?.let { workplace ->
             AlertDialog(
                 onDismissRequest = { workplaceToDelete = null },
@@ -182,14 +314,10 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                             }
                             workplaceToDelete = null
                         }
-                    ) {
-                        Text("刪除地盤")
-                    }
+                    ) {Text("刪除地盤")}
                 },
                 dismissButton = {
-                    TextButton(onClick = { workplaceToDelete = null }) {
-                        Text("取消")
-                    }
+                    TextButton(onClick = { workplaceToDelete = null }) {Text("取消")}
                 }
             )
         }
@@ -197,23 +325,17 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
 }
 
 @Composable
-fun WorkplaceItemRow(
-    workplace: Workplace,
-    onCardClick: () -> Unit,
-    onDeleteClick: () -> Unit
-) {
+fun WorkplaceItemRow(workplace: Workplace, onCardClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onCardClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween, // Pushes contents to left & right edges
             verticalAlignment = Alignment.CenterVertically
         ){
-            Column(modifier = Modifier.weight(1f)){
+            Column{
                 Text(text = workplace.name, style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -226,29 +348,17 @@ fun WorkplaceItemRow(
                     }
                 )
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Column( horizontalAlignment = Alignment.End ) {
-                    Text(
-                        text = "${workplace.totalDays}",
-                        style = MaterialTheme.typography.headlineMedium, // Bold prominent number
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "日",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Black
-                    )
-                }
-                IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "刪除地盤",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                    )
-                }
+            Column( horizontalAlignment = Alignment.End ) {
+                Text(
+                    text = "${workplace.totalDays}",
+                    style = MaterialTheme.typography.headlineMedium, // Bold prominent number
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "日",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Black
+                )
             }
         }
     }
