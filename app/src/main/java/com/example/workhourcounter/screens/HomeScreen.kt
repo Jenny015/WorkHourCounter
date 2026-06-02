@@ -47,7 +47,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
 
     // Filter out FINISHED workplaces
     val availableWorkplaces = remember(workplaceViewModel.workplaces.size) {
-        workplaceViewModel.workplaces.filter { it.status != "已完工" }
+        workplaceViewModel.workplaces.filter { it.status != "完工" }
     }
     var targetWorkplace by remember { mutableStateOf(availableWorkplaces.firstOrNull()) }
 
@@ -67,6 +67,10 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        item{
+            Text(text = "首頁", style = MaterialTheme.typography.headlineMedium)
+        }
+
         // --- CUSTOM CALENDAR TOP PANEL ---
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -86,7 +90,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                         // Fast Month Picker Action Trigger
                         Text(
                             text = monthFormat.format(calendarViewDate.time),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier.clickable {
                                 DatePickerDialog(
                                     context,
@@ -164,7 +168,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
 
                     Card(modifier = Modifier.weight(1f)) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("本月工作日數", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
+                            Text("本月工作日數", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "${if (totalDays % 1f == 0f) totalDays.toInt() else String.format(Locale.getDefault(), "%.1f", totalDays)} 日",
@@ -174,7 +178,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                     }
                     Card(modifier = Modifier.weight(1f)) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("OT時數", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
+                            Text("OT時數", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(text = "$totalOtHours 小時", style = MaterialTheme.typography.headlineMedium)
                         }
@@ -204,7 +208,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                             )
                             Text(
                                 text = dayTitleFormat.format(targetDayCal.time),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyLarge,
                                 color = Color.Gray
                             )
                         }
@@ -216,7 +220,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                     HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
                     if (availableWorkplaces.isEmpty() && existingRecordForDay == null) {
-                        Text("沒有工作地點，請先到下面「地盤」頁面新增工作地點。", color = Color.Red)
+                        Text("沒有工作地點，請先到下面「地盤」頁面新增工作地點。", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
                     } else {
                         // Workplace Target Selector Row
                         Box(modifier = Modifier.fillMaxWidth()) {
@@ -225,11 +229,11 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = existingRecordForDay == null // Keep workplace locked to avoid cross-shifting confusion
                             ) {
-                                Text("工作地點: ${targetWorkplace?.name ?: "請選擇工作地點"}")
+                                Text("工作地點: ${targetWorkplace?.name ?: "請選擇工作地點"}", style = MaterialTheme.typography.bodyLarge)
                             }
                             DropdownMenu(expanded = activeWpDropdownExpanded, onDismissRequest = { activeWpDropdownExpanded = false }) {
                                 availableWorkplaces.forEach { wp ->
-                                    DropdownMenuItem(text = { Text(wp.name) }, onClick = { targetWorkplace = wp; activeWpDropdownExpanded = false })
+                                    DropdownMenuItem(text = { Text(wp.name, style = MaterialTheme.typography.bodyLarge) }, onClick = { targetWorkplace = wp; activeWpDropdownExpanded = false })
                                 }
                             }
                         }
@@ -248,7 +252,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                             "CUSTOM" -> { manualBaseHours = ""; manualOtHours = "0" }
                                         }
                                     },
-                                    label = { Text(preset.second) }
+                                    label = { Text(preset.second, style = MaterialTheme.typography.bodyLarge) }
                                 )
                             }
                         }
@@ -258,14 +262,14 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                             OutlinedTextField(
                                 value = manualBaseHours,
                                 onValueChange = { if (selectedShiftType == "CUSTOM") manualBaseHours = it },
-                                label = { Text("基本工時") },
+                                label = { Text("基本工時", style = MaterialTheme.typography.bodyLarge) },
                                 enabled = selectedShiftType == "CUSTOM",
                                 modifier = Modifier.weight(1f)
                             )
                             OutlinedTextField(
                                 value = manualOtHours,
                                 onValueChange = { manualOtHours = it },
-                                label = { Text("OT時數") },
+                                label = { Text("OT時數", style = MaterialTheme.typography.bodyLarge) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -283,7 +287,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                         selectedCalendarDay = null
                                     }
                                 ) {
-                                    Text("刪除記錄")
+                                    Text("刪除記錄", style = MaterialTheme.typography.bodyLarge)
                                 }
                             } else {
                                 Spacer(modifier = Modifier.width(1.dp)) // Spacer placeholder layout balancing alignment
@@ -302,7 +306,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                     }
                                 }
                             ) {
-                                Text(if (existingRecordForDay == null) "新增記錄" else "保存更改")
+                                Text(if (existingRecordForDay == null) "新增記錄" else "保存更改", style = MaterialTheme.typography.bodyLarge)
                             }
                         }
                     }
@@ -315,7 +319,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
 // Custom Grid Drawing Sub-composable Engine to render matrix grids
 @Composable
 fun CalendarGridMatrix(calendarContext: Calendar, recordsList: List<WorkRecord>, onDayClick: (Calendar) -> Unit) {
-    val weekDaysLabels = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    val weekDaysLabels = listOf("日", "一", "二", "三", "四", "五", "六")
 
     val gridCal = calendarContext.clone() as Calendar
     gridCal.set(Calendar.DAY_OF_MONTH, 1)
@@ -326,7 +330,7 @@ fun CalendarGridMatrix(calendarContext: Calendar, recordsList: List<WorkRecord>,
         // Week headers row
         Row(modifier = Modifier.fillMaxWidth()) {
             weekDaysLabels.forEach { label ->
-                Text(text = label, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                Text(text = label, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge, color = Color.Gray)
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
@@ -359,7 +363,7 @@ fun CalendarGridMatrix(calendarContext: Calendar, recordsList: List<WorkRecord>,
                             ) {
                                 Text(
                                     text = "$thisCellDayNum",
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style = MaterialTheme.typography.titleLarge,
                                     color = if (hasRecord) MaterialTheme.colorScheme.primary else Color.Unspecified
                                 )
                                 // Render notification visual dot markers under day cell tracking index

@@ -17,10 +17,10 @@ import com.example.workhourcounter.viewModel.*
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
-    val items = listOf(Screen.Workplace, Screen.Cards, Screen.Home, Screen.Dashboard, Screen.Settings)
+    val items = listOf(Screen.Workplace, Screen.Home, Screen.Cards, Screen.Statistics)
     val workplaceViewModel: WorkplaceViewModel = viewModel()
-    val settingsViewModel: SettingsViewModel = viewModel()
     val homeViewModel: HomeViewModel = viewModel()
+    val statisticsViewModel: StatisticsViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -64,8 +64,7 @@ fun MainScreen() {
         ) {
             composable(Screen.Home.route) { HomeScreen(homeViewModel = homeViewModel, workplaceViewModel = workplaceViewModel) }
             composable(Screen.Workplace.route) { WorkplaceScreen(viewModel = workplaceViewModel)}
-            composable(Screen.Dashboard.route) { DashboardScreen() }
-            composable(Screen.Settings.route) { SettingsScreen(viewModel = settingsViewModel) }
+            composable(Screen.Statistics.route) { StatisticsScreen(viewModel = statisticsViewModel) }
             composable(Screen.Cards.route) { CardScreen() }
         }
     }
