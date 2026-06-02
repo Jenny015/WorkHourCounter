@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import java.util.Calendar
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -304,5 +305,49 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return list
+    }
+
+    // Check if a record already exists for a specific day/workplace combo
+    fun checkRecordExists(workplaceId: Long, dateMs: Long): Boolean {
+        val db = this.readableDatabase
+        // Zero out hours to check the exact calendar day boundaries
+        val cal = Calendar.getInstance().apply { timeInMillis = dateMs }
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+        val startOfDay = cal.timeInMillis
+        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59)
+        val endOfDay = cal.timeInMillis
+
+        val query = "SELECT COUNT(*) FROM $TABLE_RECORD WHERE $REC_WP_ID = ? AND $REC_DATE >= ? AND $REC_DATE <= ?"
+        val cursor = db.rawQuery(query, arrayOf(workplaceId.toString(), startOfDay.toString(), endOfDay.toString()))
+        var exists = false
+        if (cursor.moveToFirst()) {
+            exists = cursor.getInt(0) > 0
+        }
+        cursor.close()
+        return exists
+    }
+
+    // Replace old record for that day, or insert fresh if new
+    fun overrideOrInsertRecord(record: WorkRecord) {
+        val db = this.writableDatabase
+
+        val cal = Calendar.getInstance().apply { timeInMillis = record.date }
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+        val startOfDay = cal.timeInMillis
+        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59)
+        val endOfDay = cal.timeInMillis
+
+        // Delete old record if it exists first
+        db.delete(TABLE_RECORD, "$REC_WP_ID = ? AND $REC_DATE >= ? AND $REC_DATE <= ?",
+            arrayOf(record.workplaceId.toString(), startOfDay.toString(), endOfDay.toString()))
+
+        // Insert new record
+        insertRecord(record)
+    }
+
+    // Delete a single record directly by ID
+    fun deleteRecordById(recordId: Long) {
+        val db = this.writableDatabase
+        db.delete(TABLE_RECORD, "$REC_ID = ?", arrayOf(recordId.toString()))
     }
 }

@@ -1,15 +1,26 @@
 package com.example.workhourcounter.screens
 
 import android.app.DatePickerDialog
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import com.example.workhourcounter.data.WorkRecord
 import com.example.workhourcounter.viewModel.HomeViewModel
 import com.example.workhourcounter.viewModel.WorkplaceViewModel
 import java.text.SimpleDateFormat
@@ -19,30 +30,43 @@ import java.util.*
 fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewModel) {
     val context = LocalContext.current
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val monthFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
 
-    // Form tracking values
+    // Calendar view state controller
+    var calendarViewDate by remember { mutableStateOf(Calendar.getInstance()) }
+
+    // Form selections
     var logDate by remember { mutableStateOf(Calendar.getInstance()) }
     var selectedShiftType by remember { mutableStateOf("FULL_DAY") }
     var manualBaseHours by remember { mutableStateOf("8") }
     var manualOtHours by remember { mutableStateOf("0") }
 
     var activeWpDropdownExpanded by remember { mutableStateOf(false) }
-    val activeWorkplaces = workplaceViewModel.workplaces
-    var targetWorkplace by remember { mutableStateOf(activeWorkplaces.firstOrNull()) }
 
-    // Synchronize selector targets if database lists change
-    LaunchedEffect(activeWorkplaces.size) {
-        if (targetWorkplace == null && activeWorkplaces.isNotEmpty()) {
-            targetWorkplace = activeWorkplaces.first()
-        }
+    // REQUIREMENT 1: Filter out FINISHED workplaces
+    val availableWorkplaces = remember(workplaceViewModel.workplaces.size) {
+        workplaceViewModel.workplaces.filter { it.status != "FINISHED" }
     }
+    var targetWorkplace by remember { mutableStateOf(availableWorkplaces.firstOrNull()) }
 
-    LaunchedEffect(Unit) {
-        homeViewModel.loadMonthSummary()
+    // Dialog state targets
+    var pendingOverrideData by remember { mutableStateOf<WorkRecord?>(null) }
+    var reviewedRecordDay by remember { mutableStateOf<WorkRecord?>(null) }
+    var reviewedWorkplaceName by remember { mutableStateOf("") }
+
+    // Sync database state pipelines on startup
+    LaunchedEffect(calendarViewDate) {
+        homeViewModel.loadMonthSummary(calendarViewDate)
         workplaceViewModel.loadWorkplaces()
     }
 
-    val datePicker = DatePickerDialog(
+    LaunchedEffect(availableWorkplaces) {
+        if (targetWorkplace == null || targetWorkplace !in availableWorkplaces) {
+            targetWorkplace = availableWorkplaces.firstOrNull()
+        }
+    }
+
+    val formDatePicker = DatePickerDialog(
         context, { _, y, m, d ->
             val cal = Calendar.getInstance()
             cal.set(y, m, d, 0, 0, 0)
@@ -52,130 +76,119 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
     )
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // --- REQUIREMENT 3: CUSTOM CALENDAR TOP PANEL ---
         item {
-            Text(text = "Overview", style = MaterialTheme.typography.headlineMedium)
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    // Header Navigation row: [<] Month Year [>]
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = {
+                            val newCal = calendarViewDate.clone() as Calendar
+                            newCal.add(Calendar.MONTH, -1)
+                            calendarViewDate = newCal
+                        }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Prev Month") }
+
+                        // Fast Month Picker Action Trigger
+                        Text(
+                            text = monthFormat.format(calendarViewDate.time),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.clickable {
+                                DatePickerDialog(context, { _, y, m, _ ->
+                                    val fastCal = Calendar.getInstance()
+                                    fastCal.set(y, m, 1)
+                                    calendarViewDate = fastCal
+                                }, calendarViewDate.get(Calendar.YEAR), calendarViewDate.get(Calendar.MONTH), 1).show()
+                            }
+                        )
+
+                        IconButton(onClick = {
+                            val newCal = calendarViewDate.clone() as Calendar
+                            newCal.add(Calendar.MONTH, 1)
+                            calendarViewDate = newCal
+                        }) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "Next Month") }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Calendar Grid Matrix Days Render Layout
+                    CalendarGridMatrix(
+                        calendarContext = calendarViewDate,
+                        recordsList = homeViewModel.currentMonthRecords,
+                        onDayClick = { selectedDayCal ->
+                            // REQUIREMENT 3.3: Day selection evaluation overlay pipeline
+                            val matchedRecord = homeViewModel.currentMonthRecords.firstOrNull { log ->
+                                val c1 = Calendar.getInstance().apply { timeInMillis = log.date }
+                                c1.get(Calendar.DAY_OF_MONTH) == selectedDayCal.get(Calendar.DAY_OF_MONTH)
+                            }
+                            if (matchedRecord != null) {
+                                reviewedRecordDay = matchedRecord
+                                reviewedWorkplaceName = workplaceViewModel.workplaces.firstOrNull { it.id == matchedRecord.workplaceId }?.name ?: "Unknown"
+                            }
+                        }
+                    )
+                }
+            }
         }
 
-        // --- SECTION 1: MONTHLY AGGREGATES CARDS ---
+        // --- STATS OVERVIEW CARD COMPONENT ROW ---
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Card(modifier = Modifier.weight(1f)) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            "Hours This Month",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            "${homeViewModel.currentMonthHours}h",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
+                        Text("Month Hours", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
+                        Text("${homeViewModel.currentMonthHours}h", style = MaterialTheme.typography.headlineSmall)
                     }
                 }
                 Card(modifier = Modifier.weight(1f)) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            "Est. Month Salary",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            "\$${
-                                String.format(
-                                    Locale.getDefault(),
-                                    "%.2f",
-                                    homeViewModel.currentMonthSalary
-                                )
-                            }",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Text("Est. Month Income", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
+                        Text("\$${String.format(Locale.getDefault(), "%.2f", homeViewModel.currentMonthSalary)}", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
         }
 
-        // --- SECTION 2: ADD LOG OVERLAY SHEET FORM ---
+        // --- ADD WORKING RECORD FORM SHEET PANEL ---
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Add Working Record", style = MaterialTheme.typography.titleMedium)
 
-                    if (activeWorkplaces.isEmpty()) {
-                        Text("Please add a workplace in Management tab first.", color = Color.Red)
+                    if (availableWorkplaces.isEmpty()) {
+                        Text("No active workplaces available. Head to Management settings tab.", color = Color.Gray)
                     } else {
-                        // Workplace Target Dropdown
                         Box(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedButton(
-                                onClick = { activeWpDropdownExpanded = true },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                            OutlinedButton(onClick = { activeWpDropdownExpanded = true }, modifier = Modifier.fillMaxWidth()) {
                                 Text("Workplace: ${targetWorkplace?.name ?: "Select Target"}")
                             }
-                            DropdownMenu(
-                                expanded = activeWpDropdownExpanded,
-                                onDismissRequest = { activeWpDropdownExpanded = false }
-                            ) {
-                                activeWorkplaces.forEach { wp ->
-                                    DropdownMenuItem(
-                                        text = { Text(wp.name) },
-                                        onClick = {
-                                            targetWorkplace = wp
-                                            activeWpDropdownExpanded = false
-                                        }
-                                    )
+                            DropdownMenu(expanded = activeWpDropdownExpanded, onDismissRequest = { activeWpDropdownExpanded = false }) {
+                                availableWorkplaces.forEach { wp ->
+                                    DropdownMenuItem(text = { Text(wp.name) }, onClick = { targetWorkplace = wp; activeWpDropdownExpanded = false })
                                 }
                             }
                         }
 
-                        // Date Button
-                        OutlinedButton(
-                            onClick = { datePicker.show() },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                        OutlinedButton(onClick = { formDatePicker.show() }, modifier = Modifier.fillMaxWidth()) {
                             Text("Date: ${dateFormat.format(logDate.time)}")
                         }
 
-                        // Shift Type Selector
-                        Text("Shift Presets", style = MaterialTheme.typography.labelMedium)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            listOf(
-                                "FULL_DAY" to "Full",
-                                "HALF_DAY" to "Half",
-                                "CUSTOM" to "Custom"
-                            ).forEach { preset ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("FULL_DAY" to "Full", "HALF_DAY" to "Half", "CUSTOM" to "Custom").forEach { preset ->
                                 FilterChip(
                                     selected = selectedShiftType == preset.first,
                                     onClick = {
                                         selectedShiftType = preset.first
                                         when (preset.first) {
-                                            "FULL_DAY" -> {
-                                                manualBaseHours = "8"; manualOtHours = "0"
-                                            }
-
-                                            "HALF_DAY" -> {
-                                                manualBaseHours = "4"; manualOtHours = "0"
-                                            }
-
-                                            "CUSTOM" -> {
-                                                manualBaseHours = ""; manualOtHours = "0"
-                                            }
+                                            "FULL_DAY" -> { manualBaseHours = "8"; manualOtHours = "0" }
+                                            "HALF_DAY" -> { manualBaseHours = "4"; manualOtHours = "0" }
+                                            "CUSTOM" -> { manualBaseHours = ""; manualOtHours = "0" }
                                         }
                                     },
                                     label = { Text(preset.second) }
@@ -183,23 +196,9 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                             }
                         }
 
-                        // Hours Entry Form Subfields
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedTextField(
-                                value = manualBaseHours,
-                                onValueChange = {
-                                    if (selectedShiftType == "CUSTOM") manualBaseHours = it
-                                },
-                                label = { Text("Base Hours") },
-                                enabled = selectedShiftType == "CUSTOM",
-                                modifier = Modifier.weight(1f)
-                            )
-                            OutlinedTextField(
-                                value = manualOtHours,
-                                onValueChange = { manualOtHours = it },
-                                label = { Text("OT Hours") },
-                                modifier = Modifier.weight(1f)
-                            )
+                            OutlinedTextField(value = manualBaseHours, onValueChange = { if (selectedShiftType == "CUSTOM") manualBaseHours = it }, label = { Text("Base Hours") }, enabled = selectedShiftType == "CUSTOM", modifier = Modifier.weight(1f))
+                            OutlinedTextField(value = manualOtHours, onValueChange = { manualOtHours = it }, label = { Text("OT Hours") }, modifier = Modifier.weight(1f))
                         }
 
                         Button(
@@ -208,22 +207,126 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                 val base = manualBaseHours.toFloatOrNull() ?: 0f
                                 val ot = manualOtHours.toFloatOrNull() ?: 0f
 
-                                if (wpId != null && base >= 0f) {
-                                    homeViewModel.logShift(
-                                        wpId,
-                                        logDate.timeInMillis,
-                                        selectedShiftType,
-                                        base,
-                                        ot
-                                    )
-                                    // Reset counters
-                                    if (selectedShiftType == "CUSTOM") manualBaseHours = ""
-                                    manualOtHours = "0"
+                                if (wpId != null) {
+                                    // REQUIREMENT 2: Intercept insertion pipeline if daily entry exists
+                                    if (homeViewModel.checkConflict(wpId, logDate.timeInMillis)) {
+                                        pendingOverrideData = WorkRecord(workplaceId = wpId, date = logDate.timeInMillis, shiftType = selectedShiftType, baseHours = base, otHours = ot)
+                                    } else {
+                                        homeViewModel.logShiftDirect(wpId, logDate.timeInMillis, selectedShiftType, base, ot, calendarViewDate)
+                                        manualOtHours = "0"
+                                    }
                                 }
                             },
                             modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Text("Log Shift")
+                        ) { Text("Log Shift") }
+                    }
+                }
+            }
+        }
+    }
+
+    // --- REQUIREMENT 2.1: OVERRIDE PROTECTION CONFIRMATION DIALOG ---
+    pendingOverrideData?.let { record ->
+        AlertDialog(
+            onDismissRequest = { pendingOverrideData = null },
+            title = { Text("Override Existing Record?") },
+            text = { Text("Your action will override the old record logged for this day. Do you want to continue?") },
+            confirmButton = {
+                Button(onClick = {
+                    homeViewModel.logShiftDirect(record.workplaceId, record.date, record.shiftType, record.baseHours, record.otHours, calendarViewDate)
+                    pendingOverrideData = null
+                    manualOtHours = "0"
+                }) { Text("Update") }
+            },
+            dismissButton = { TextButton(onClick = { pendingOverrideData = null }) { Text("Cancel") } }
+        )
+    }
+
+    // --- REQUIREMENT 3.3: REVIEW / DELETE OVERLAY MODAL SHEET ---
+    reviewedRecordDay?.let { record ->
+        Dialog(onDismissRequest = { reviewedRecordDay = null }) {
+            Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Review Shift Log", style = MaterialTheme.typography.titleLarge)
+                    Divider()
+                    Text("Workplace: $reviewedWorkplaceName")
+                    Text("Date: ${dateFormat.format(Date(record.date))}")
+                    Text("Base Hours Worked: ${record.baseHours}h")
+                    Text("OT Hours Worked: ${record.otHours}h")
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color.Red),
+                            onClick = {
+                                homeViewModel.deleteRecord(record.id, calendarViewDate)
+                                reviewedRecordDay = null
+                            }
+                        ) { Text("Remove Record") }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(onClick = { reviewedRecordDay = null }) { Text("Close") }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Custom Grid Drawing Sub-composable Engine to render matrix grids
+@Composable
+fun CalendarGridMatrix(calendarContext: Calendar, recordsList: List<WorkRecord>, onDayClick: (Calendar) -> Unit) {
+    val weekDaysLabels = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+
+    val gridCal = calendarContext.clone() as Calendar
+    gridCal.set(Calendar.DAY_OF_MONTH, 1)
+    val firstDayOfWeekOffset = gridCal.get(Calendar.DAY_OF_WEEK) - 1
+    val totalDaysInMonth = gridCal.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Week headers row
+        Row(modifier = Modifier.fillMaxWidth()) {
+            weekDaysLabels.forEach { label ->
+                Text(text = label, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Grid Generator Matrix Engine loops
+        var currentDayCounter = 1
+        for (weekRow in 0..5) {
+            if (currentDayCounter > totalDaysInMonth) break
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                for (dayCol in 0..6) {
+                    val isActiveCellInMonthScope = (weekRow > 0 || dayCol >= firstDayOfWeekOffset) && currentDayCounter <= totalDaysInMonth
+
+                    Box(modifier = Modifier.weight(1f).aspectRatio(1f), contentAlignment = Alignment.Center) {
+                        if (isActiveCellInMonthScope) {
+                            val thisCellDayNum = currentDayCounter
+                            val targetedDayCal = (calendarContext.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, thisCellDayNum) }
+
+                            // REQUIREMENT 3.2: Verify if this specific calendar index has an active database entry
+                            val hasRecord = recordsList.any { log ->
+                                val c2 = Calendar.getInstance().apply { timeInMillis = log.date }
+                                c2.get(Calendar.DAY_OF_MONTH) == thisCellDayNum
+                            }
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable { onDayClick(targetedDayCal) },
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "$thisCellDayNum",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (hasRecord) MaterialTheme.colorScheme.primary else Color.Unspecified
+                                )
+                                // Render notification visual dot markers under day cell tracking index
+                                if (hasRecord) {
+                                    Box(modifier = Modifier.size(5.dp).background(MaterialTheme.colorScheme.primary, shape = CircleShape))
+                                }
+                            }
+                            currentDayCounter++
                         }
                     }
                 }
