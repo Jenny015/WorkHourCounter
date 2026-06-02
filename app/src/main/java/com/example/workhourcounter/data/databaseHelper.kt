@@ -98,7 +98,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     // --- DATABASE OPERATIONS ---
-
+    //  --- Workplace ---
     fun insertWorkplace(workplace: Workplace): Long {
         val db = this.writableDatabase
         val values = ContentValues().apply {
@@ -217,7 +217,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     // --- SALARY & SETTINGS OPERATIONS ---
-
     fun insertOrUpdateSalary(effectiveDateMs: Long, amount: Float) {
         val db = this.writableDatabase
         val values = ContentValues().apply {
@@ -267,5 +266,43 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return day
+    }
+
+    //  --- Home & Record ---
+    // Insert a shift log record
+    fun insertRecord(record: WorkRecord): Long {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(REC_WP_ID, record.workplaceId)
+            put(REC_DATE, record.date)
+            put(REC_SHIFT_TYPE, record.shiftType)
+            put(REC_BASE_HOURS, record.baseHours)
+            put(REC_OT_HOURS, record.otHours)
+        }
+        return db.insert(TABLE_RECORD, null, values)
+    }
+
+    // Fetch all records logged within a specific timestamp window range
+    fun getRecordsInWindow(startTimestamp: Long, endTimestamp: Long): List<WorkRecord> {
+        val list = mutableListOf<WorkRecord>()
+        val db = this.readableDatabase
+        val query = "SELECT * FROM $TABLE_RECORD WHERE $REC_DATE >= ? AND $REC_DATE <= ?"
+        val cursor = db.rawQuery(query, arrayOf(startTimestamp.toString(), endTimestamp.toString()))
+
+        if (cursor.moveToFirst()) {
+            do {
+                val record = WorkRecord(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow(REC_ID)),
+                    workplaceId = cursor.getLong(cursor.getColumnIndexOrThrow(REC_WP_ID)),
+                    date = cursor.getLong(cursor.getColumnIndexOrThrow(REC_DATE)),
+                    shiftType = cursor.getString(cursor.getColumnIndexOrThrow(REC_SHIFT_TYPE)),
+                    baseHours = cursor.getFloat(cursor.getColumnIndexOrThrow(REC_BASE_HOURS)),
+                    otHours = cursor.getFloat(cursor.getColumnIndexOrThrow(REC_OT_HOURS))
+                )
+                list.add(record)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
     }
 }

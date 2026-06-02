@@ -20,6 +20,7 @@ fun MainScreen() {
     val items = listOf(Screen.Workplace, Screen.Cards, Screen.Home, Screen.Dashboard, Screen.Settings)
     val workplaceViewModel: WorkplaceViewModel = viewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
+    val homeViewModel: HomeViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -43,9 +44,9 @@ fun MainScreen() {
                                         saveState = true
                                     }
                                     // Avoid multiple copies of the same destination when
-                                    // reselecting the same item
+                                    // re-selecting the same item
                                     launchSingleTop = true
-                                    // Restore state when reselecting a previously selected item
+                                    // Restore state when re-selecting a previously selected item
                                     restoreState = true
                                 }
                             }
@@ -61,7 +62,7 @@ fun MainScreen() {
             startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Home.route) { HomeScreen() }
+            composable(Screen.Home.route) { HomeScreen(homeViewModel = homeViewModel, workplaceViewModel = workplaceViewModel) }
             composable(Screen.Workplace.route) { WorkplaceScreen(viewModel = workplaceViewModel)}
             composable(Screen.Dashboard.route) { DashboardScreen() }
             composable(Screen.Settings.route) { SettingsScreen(viewModel = settingsViewModel) }
