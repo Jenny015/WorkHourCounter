@@ -9,9 +9,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -139,17 +138,48 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
 
         // --- STATS OVERVIEW CARD COMPONENT ROW ---
         item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Card(modifier = Modifier.weight(1f)) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Month Hours", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
-                        Text("${homeViewModel.currentMonthHours}h", style = MaterialTheme.typography.headlineSmall)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // First Row: 2-Column Split (Days vs OT Hours)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Calculate total equivalent days (Base Hours / 8)
+                    val totalBaseHours = homeViewModel.currentMonthRecords.sumOf { it.baseHours.toDouble() }.toFloat()
+                    val totalDays = totalBaseHours / 8f
+
+                    // Calculate total OT Hours
+                    val totalOtHours = homeViewModel.currentMonthRecords.sumOf { it.otHours.toDouble() }.toFloat()
+
+                    Card(modifier = Modifier.weight(1f)) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Work Days", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${if (totalDays % 1f == 0f) totalDays.toInt() else String.format(Locale.getDefault(), "%.1f", totalDays)} Days",
+                                style = MaterialTheme.typography.headlineMedium
+                            )
+                        }
+                    }
+                    Card(modifier = Modifier.weight(1f)) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Overtime", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = "$totalOtHours hrs", style = MaterialTheme.typography.headlineMedium)
+                        }
                     }
                 }
-                Card(modifier = Modifier.weight(1f)) {
+
+                // Second Row: Full Width Estimated Income
+                Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Est. Month Income", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
-                        Text("\$${String.format(Locale.getDefault(), "%.2f", homeViewModel.currentMonthSalary)}", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "\$${String.format(Locale.getDefault(), "%.2f", homeViewModel.currentMonthSalary)}",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
@@ -208,11 +238,15 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                 val ot = manualOtHours.toFloatOrNull() ?: 0f
 
                                 if (wpId != null) {
-                                    // REQUIREMENT 2: Intercept insertion pipeline if daily entry exists
                                     if (homeViewModel.checkConflict(wpId, logDate.timeInMillis)) {
                                         pendingOverrideData = WorkRecord(workplaceId = wpId, date = logDate.timeInMillis, shiftType = selectedShiftType, baseHours = base, otHours = ot)
                                     } else {
                                         homeViewModel.logShiftDirect(wpId, logDate.timeInMillis, selectedShiftType, base, ot, calendarViewDate)
+
+                                        // RESET ALIGNMENT ACTION: Reset form tracking states back to today
+                                        logDate = Calendar.getInstance()
+                                        selectedShiftType = "FULL_DAY"
+                                        manualBaseHours = "8"
                                         manualOtHours = "0"
                                     }
                                 }
@@ -231,10 +265,16 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
             onDismissRequest = { pendingOverrideData = null },
             title = { Text("Override Existing Record?") },
             text = { Text("Your action will override the old record logged for this day. Do you want to continue?") },
+            // Inside your AlertDialog confirmButton click listener:
             confirmButton = {
                 Button(onClick = {
                     homeViewModel.logShiftDirect(record.workplaceId, record.date, record.shiftType, record.baseHours, record.otHours, calendarViewDate)
                     pendingOverrideData = null
+
+                    // RESET ALIGNMENT ACTION
+                    logDate = Calendar.getInstance()
+                    selectedShiftType = "FULL_DAY"
+                    manualBaseHours = "8"
                     manualOtHours = "0"
                 }) { Text("Update") }
             },
@@ -248,7 +288,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
             Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Review Shift Log", style = MaterialTheme.typography.titleLarge)
-                    Divider()
+                    HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
                     Text("Workplace: $reviewedWorkplaceName")
                     Text("Date: ${dateFormat.format(Date(record.date))}")
                     Text("Base Hours Worked: ${record.baseHours}h")

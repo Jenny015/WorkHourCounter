@@ -120,6 +120,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
 
                                 viewModel.addSalaryRate(selectedDate.timeInMillis, amount)
                                 salaryInput = ""
+                                selectedDate = Calendar.getInstance()
                             }
                         },
                         modifier = Modifier.align(Alignment.End)
