@@ -1,4 +1,4 @@
-package com.example.workhourcounter
+package com.example.workhourcounter.data
 
 import android.content.ContentValues
 import android.content.Context
@@ -9,7 +9,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "workhourcounter.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
 
         // Table Names
         const val TABLE_WORKPLACE = "workplace"
@@ -28,22 +28,34 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val REC_SHIFT_TYPE = "shift_type"
         const val REC_BASE_HOURS = "base_hours"
         const val REC_OT_HOURS = "ot_hours"
+
+        // Salary
+        const val TABLE_SALARY = "salary_history"
+        const val SAL_ID = "id"
+        const val SAL_EFFECTIVE_DATE = "effective_date" // Long timestamp (e.g., 2025-01-01)
+        const val SAL_AMOUNT = "amount" // Float (e.g., 25000)
+
+        // Settings
+        const val TABLE_SETTINGS = "settings"
+        const val SET_KEY = "key_name"
+        const val SET_VALUE = "value_int"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
-        // Create Workplace Table
-        val createWorkplaceTable = """
-            CREATE TABLE $TABLE_WORKPLACE (
+        try {
+            // 1. Create Workplace Table
+            db.execSQL("""
+            CREATE TABLE IF NOT EXISTS $TABLE_WORKPLACE (
                 $WP_ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 $WP_NAME TEXT,
                 $WP_START_DATE INTEGER,
                 $WP_STATUS TEXT
             )
-        """.trimIndent()
+        """.trimIndent())
 
-        // Create Record Table
-        val createRecordTable = """
-            CREATE TABLE $TABLE_RECORD (
+            // 2. Create Record Table
+            db.execSQL("""
+            CREATE TABLE IF NOT EXISTS $TABLE_RECORD (
                 $REC_ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 $REC_WP_ID INTEGER,
                 $REC_DATE INTEGER,
@@ -52,15 +64,36 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 $REC_OT_HOURS REAL,
                 FOREIGN KEY($REC_WP_ID) REFERENCES $TABLE_WORKPLACE($WP_ID)
             )
-        """.trimIndent()
+        """.trimIndent())
 
-        db.execSQL(createWorkplaceTable)
-        db.execSQL(createRecordTable)
+            // 3. Create Salary History Table
+            db.execSQL("""
+            CREATE TABLE IF NOT EXISTS $TABLE_SALARY (
+                $SAL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $SAL_EFFECTIVE_DATE INTEGER UNIQUE,
+                $SAL_AMOUNT REAL
+            )
+        """.trimIndent())
+
+            // 4. Create Settings Table
+            db.execSQL("""
+            CREATE TABLE IF NOT EXISTS $TABLE_SETTINGS (
+                $SET_KEY TEXT PRIMARY KEY,
+                $SET_VALUE INTEGER
+            )
+        """.trimIndent())
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        // Safely drop everything and rebuild
         db.execSQL("DROP TABLE IF EXISTS $TABLE_RECORD")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_WORKPLACE")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_SALARY")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_SETTINGS")
         onCreate(db)
     }
 
@@ -181,5 +214,58 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return list
+    }
+
+    // --- SALARY & SETTINGS OPERATIONS ---
+
+    fun insertOrUpdateSalary(effectiveDateMs: Long, amount: Float) {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(SAL_EFFECTIVE_DATE, effectiveDateMs)
+            put(SAL_AMOUNT, amount)
+        }
+        // INSERT OR REPLACE handles updating the salary if the exact date entry already exists
+        db.insertWithOnConflict(TABLE_SALARY, null, values, SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
+    fun getSalaryHistory(): List<Pair<Long, Float>> {
+        val list = mutableListOf<Pair<Long, Float>>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_SALARY ORDER BY $SAL_EFFECTIVE_DATE DESC", null)
+
+        if (cursor.moveToFirst()) {
+            do {
+                val date = cursor.getLong(cursor.getColumnIndexOrThrow(SAL_EFFECTIVE_DATE))
+                val amount = cursor.getFloat(cursor.getColumnIndexOrThrow(SAL_AMOUNT))
+                list.add(Pair(date, amount))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun deleteSalaryRecord(effectiveDateMs: Long) {
+        val db = this.writableDatabase
+        db.delete(TABLE_SALARY, "$SAL_EFFECTIVE_DATE = ?", arrayOf(effectiveDateMs.toString()))
+    }
+
+    fun savePaymentDay(day: Int) {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(SET_KEY, "payment_day")
+            put(SET_VALUE, day)
+        }
+        db.insertWithOnConflict(TABLE_SETTINGS, null, values, SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
+    fun getPaymentDay(): Int {
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $SET_VALUE FROM $TABLE_SETTINGS WHERE $SET_KEY = 'payment_day'", null)
+        var day = 7 // Default fallback to the 7th
+        if (cursor.moveToFirst()) {
+            day = cursor.getInt(0)
+        }
+        cursor.close()
+        return day
     }
 }

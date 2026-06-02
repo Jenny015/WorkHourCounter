@@ -1,7 +1,6 @@
 package com.example.workhourcounter.screens
 
 import android.icu.text.SimpleDateFormat
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,8 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.example.workhourcounter.Workplace
-import com.example.workhourcounter.WorkplaceViewModel
+import com.example.workhourcounter.data.Workplace
+import com.example.workhourcounter.viewModel.WorkplaceViewModel
 import java.util.Date
 import java.util.Locale
 
@@ -168,12 +167,15 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
             ) {
                 Text(
                     text = if (currentMode == ExecutionMode.PENDING_EDIT) "🔧 點擊一個地盤以編輯." else "⚠️ 點擊一個地盤以刪除.",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally)
                 )
             }
         }
-
+        Text(
+            text = "點擊任意地盤查看出勤記錄",
+            style = MaterialTheme.typography.bodyMedium
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         // --- DYNAMIC WORKPLACE LIST ---

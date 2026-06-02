@@ -1,9 +1,11 @@
-package com.example.workhourcounter
+package com.example.workhourcounter.viewModel
 
 import android.app.Application
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
-import java.util.Date
+import com.example.workhourcounter.data.DatabaseHelper
+import com.example.workhourcounter.data.WorkRecord
+import com.example.workhourcounter.data.Workplace
 
 class WorkplaceViewModel(application: Application) : AndroidViewModel(application) {
     private val dbHelper = DatabaseHelper(application)
