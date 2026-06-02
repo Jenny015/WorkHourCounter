@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import java.util.Calendar
 import androidx.core.database.sqlite.transaction
+import com.example.workhourcounter.viewModel.CardModel
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -31,16 +32,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val REC_BASE_HOURS = "base_hours"
         const val REC_OT_HOURS = "ot_hours"
 
-        // Salary
-        const val TABLE_SALARY = "salary_history"
-        const val SAL_ID = "id"
-        const val SAL_EFFECTIVE_DATE = "effective_date" // Long timestamp (e.g., 2025-01-01)
-        const val SAL_AMOUNT = "amount" // Float (e.g., 25000)
-
-        // Settings
-        const val TABLE_SETTINGS = "settings"
-        const val SET_KEY = "key_name"
-        const val SET_VALUE = "value_int"
+        // Cards
+        const val TABLE_CARD = "cards"
+        const val CARD_ID = "id"
+        const val CARD_NAME = "name"
+        const val CARD_NO = "card_no"
+        const val CARD_EXPIRE = "expire_date"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -68,22 +65,15 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             )
         """.trimIndent())
 
-            // 3. Create Salary History Table
-            db.execSQL("""
-            CREATE TABLE IF NOT EXISTS $TABLE_SALARY (
-                $SAL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $SAL_EFFECTIVE_DATE INTEGER UNIQUE,
-                $SAL_AMOUNT REAL
-            )
-        """.trimIndent())
-
-            // 4. Create Settings Table
-            db.execSQL("""
-            CREATE TABLE IF NOT EXISTS $TABLE_SETTINGS (
-                $SET_KEY TEXT PRIMARY KEY,
-                $SET_VALUE INTEGER
-            )
-        """.trimIndent())
+            val createCardTable = """
+                CREATE TABLE $TABLE_CARD (
+                    $CARD_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    $CARD_NAME TEXT,
+                    $CARD_NO TEXT,
+                    $CARD_EXPIRE INTEGER
+                )
+            """.trimIndent()
+            db.execSQL(createCardTable)
 
         } catch (e: Exception) {
             e.printStackTrace()
@@ -94,8 +84,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         // Safely drop everything and rebuild
         db.execSQL("DROP TABLE IF EXISTS $TABLE_RECORD")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_WORKPLACE")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_SALARY")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_SETTINGS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_CARD")
         onCreate(db)
     }
 
@@ -304,6 +293,50 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 val wpName = cursor.getString(cursor.getColumnIndexOrThrow(WP_NAME))
                 val wpStatus = cursor.getString(cursor.getColumnIndexOrThrow(WP_STATUS))
                 list.add(Triple(record, wpName, wpStatus))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    // --- Cards ---
+    fun insertCard(name: String, no: String, expireMs: Long): Long {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(CARD_NAME, name)
+            put(CARD_NO, no)
+            put(CARD_EXPIRE, expireMs)
+        }
+        return db.insert(TABLE_CARD, null, values)
+    }
+
+    fun updateCard(id: Long, name: String, no: String, expireMs: Long): Int {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(CARD_NAME, name)
+            put(CARD_NO, no)
+            put(CARD_EXPIRE, expireMs)
+        }
+        return db.update(TABLE_CARD, values, "$CARD_ID = ?", arrayOf(id.toString()))
+    }
+
+    fun deleteCard(id: Long): Int {
+        val db = this.writableDatabase
+        return db.delete(TABLE_CARD, "$CARD_ID = ?", arrayOf(id.toString()))
+    }
+
+    fun getAllCards(): List<CardModel> {
+        val list = mutableListOf<CardModel>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_CARD ORDER BY $CARD_EXPIRE ASC", null)
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(CardModel(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow(CARD_ID)),
+                    name = cursor.getString(cursor.getColumnIndexOrThrow(CARD_NAME)),
+                    no = cursor.getString(cursor.getColumnIndexOrThrow(CARD_NO)),
+                    expireDate = cursor.getLong(cursor.getColumnIndexOrThrow(CARD_EXPIRE))
+                ))
             } while (cursor.moveToNext())
         }
         cursor.close()

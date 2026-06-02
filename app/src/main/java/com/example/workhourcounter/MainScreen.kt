@@ -21,6 +21,7 @@ fun MainScreen() {
     val workplaceViewModel: WorkplaceViewModel = viewModel()
     val homeViewModel: HomeViewModel = viewModel()
     val statisticsViewModel: StatisticsViewModel = viewModel()
+    val cardsViewModel: CardsViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -65,7 +66,7 @@ fun MainScreen() {
             composable(Screen.Home.route) { HomeScreen(homeViewModel = homeViewModel, workplaceViewModel = workplaceViewModel) }
             composable(Screen.Workplace.route) { WorkplaceScreen(viewModel = workplaceViewModel)}
             composable(Screen.Statistics.route) { StatisticsScreen(viewModel = statisticsViewModel) }
-            composable(Screen.Cards.route) { CardScreen() }
+            composable(Screen.Cards.route) { CardsScreen(viewModel = cardsViewModel) }
         }
     }
 }
