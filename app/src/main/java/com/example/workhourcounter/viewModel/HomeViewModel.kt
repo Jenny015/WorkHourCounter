@@ -14,7 +14,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val dbHelper = DatabaseHelper(application)
 
     var currentMonthHours by mutableStateOf(0f)
-    var currentMonthSalary by mutableStateOf(0f)
 
     val currentMonthRecords = mutableStateListOf<WorkRecord>()
 
@@ -30,27 +29,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val endMs = calendar.timeInMillis
 
         val activeLogs = dbHelper.getRecordsInWindow(startMs, endMs)
-        val ratesTimeline = dbHelper.getSalaryHistory()
+        //val ratesTimeline = dbHelper.getSalaryHistory()
 
         currentMonthRecords.clear()
         currentMonthRecords.addAll(activeLogs)
 
         var totalHours = 0f
-        var totalPay = 0f
 
         for (log in activeLogs) {
             totalHours += (log.baseHours + log.otHours)
-            val matchingSalary = ratesTimeline.filter { it.first <= log.date }.maxByOrNull { it.first }?.second ?: 0f
-            val hourlyEquivalentRate = matchingSalary / 160f
-            totalPay += (log.baseHours * hourlyEquivalentRate) + (log.otHours * hourlyEquivalentRate * 1.5f)
         }
 
         currentMonthHours = totalHours
-        currentMonthSalary = totalPay
-    }
-
-    fun checkConflict(workplaceId: Long, dateMs: Long): Boolean {
-        return dbHelper.checkRecordExists(workplaceId, dateMs)
     }
 
     fun logShiftDirect(workplaceId: Long, dateMs: Long, type: String, base: Float, ot: Float, calendarContext: Calendar) {

@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import java.util.Calendar
+import androidx.core.database.sqlite.transaction
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -121,7 +122,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             CASE $WP_STATUS
                 WHEN '主力盤' THEN 1
                 WHEN '較少去' THEN 2
-                WHEN '已起貨' THEN 3
+                WHEN '已完工' THEN 3
                 ELSE 4
             End ASC,
             $WP_START_DATE DESC
@@ -177,16 +178,15 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     // Delete a workplace AND its cascading records
     fun deleteWorkplaceWithRecords(workplaceId: Long) {
         val db = this.writableDatabase
-        db.beginTransaction()
-        try {
-            // First, delete all records linked to this workplace
-            db.delete(TABLE_RECORD, "$REC_WP_ID = ?", arrayOf(workplaceId.toString()))
-            // Second, delete the workplace itself
-            db.delete(TABLE_WORKPLACE, "$WP_ID = ?", arrayOf(workplaceId.toString()))
+        db.transaction {
+            try {
+                // First, delete all records linked to this workplace
+                delete(TABLE_RECORD, "$REC_WP_ID = ?", arrayOf(workplaceId.toString()))
+                // Second, delete the workplace itself
+                delete(TABLE_WORKPLACE, "$WP_ID = ?", arrayOf(workplaceId.toString()))
 
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
+            } finally {
+            }
         }
     }
 
@@ -305,26 +305,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return list
-    }
-
-    // Check if a record already exists for a specific day/workplace combo
-    fun checkRecordExists(workplaceId: Long, dateMs: Long): Boolean {
-        val db = this.readableDatabase
-        // Zero out hours to check the exact calendar day boundaries
-        val cal = Calendar.getInstance().apply { timeInMillis = dateMs }
-        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
-        val startOfDay = cal.timeInMillis
-        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59)
-        val endOfDay = cal.timeInMillis
-
-        val query = "SELECT COUNT(*) FROM $TABLE_RECORD WHERE $REC_WP_ID = ? AND $REC_DATE >= ? AND $REC_DATE <= ?"
-        val cursor = db.rawQuery(query, arrayOf(workplaceId.toString(), startOfDay.toString(), endOfDay.toString()))
-        var exists = false
-        if (cursor.moveToFirst()) {
-            exists = cursor.getInt(0) > 0
-        }
-        cursor.close()
-        return exists
     }
 
     // Replace old record for that day, or insert fresh if new

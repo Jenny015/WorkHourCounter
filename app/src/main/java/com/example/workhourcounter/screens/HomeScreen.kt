@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
@@ -28,30 +29,27 @@ import java.util.*
 @Composable
 fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewModel) {
     val context = LocalContext.current
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val monthFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+    val dayTitleFormat = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
 
     // Calendar view state controller
     var calendarViewDate by remember { mutableStateOf(Calendar.getInstance()) }
 
+    // Unified Popup Dialog Architecture
+    var selectedCalendarDay by remember { mutableStateOf<Calendar?>(null) }
+    var existingRecordForDay by remember { mutableStateOf<WorkRecord?>(null) }
+
     // Form selections
-    var logDate by remember { mutableStateOf(Calendar.getInstance()) }
     var selectedShiftType by remember { mutableStateOf("FULL_DAY") }
     var manualBaseHours by remember { mutableStateOf("8") }
     var manualOtHours by remember { mutableStateOf("0") }
-
     var activeWpDropdownExpanded by remember { mutableStateOf(false) }
 
-    // REQUIREMENT 1: Filter out FINISHED workplaces
+    // Filter out FINISHED workplaces
     val availableWorkplaces = remember(workplaceViewModel.workplaces.size) {
-        workplaceViewModel.workplaces.filter { it.status != "FINISHED" }
+        workplaceViewModel.workplaces.filter { it.status != "已完工" }
     }
     var targetWorkplace by remember { mutableStateOf(availableWorkplaces.firstOrNull()) }
-
-    // Dialog state targets
-    var pendingOverrideData by remember { mutableStateOf<WorkRecord?>(null) }
-    var reviewedRecordDay by remember { mutableStateOf<WorkRecord?>(null) }
-    var reviewedWorkplaceName by remember { mutableStateOf("") }
 
     // Sync database state pipelines on startup
     LaunchedEffect(calendarViewDate) {
@@ -65,20 +63,11 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
         }
     }
 
-    val formDatePicker = DatePickerDialog(
-        context, { _, y, m, d ->
-            val cal = Calendar.getInstance()
-            cal.set(y, m, d, 0, 0, 0)
-            logDate = cal
-        },
-        logDate.get(Calendar.YEAR), logDate.get(Calendar.MONTH), logDate.get(Calendar.DAY_OF_MONTH)
-    )
-
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // --- REQUIREMENT 3: CUSTOM CALENDAR TOP PANEL ---
+        // --- CUSTOM CALENDAR TOP PANEL ---
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -92,18 +81,24 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                             val newCal = calendarViewDate.clone() as Calendar
                             newCal.add(Calendar.MONTH, -1)
                             calendarViewDate = newCal
-                        }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Prev Month") }
+                        }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "上個月") }
 
                         // Fast Month Picker Action Trigger
                         Text(
                             text = monthFormat.format(calendarViewDate.time),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.clickable {
-                                DatePickerDialog(context, { _, y, m, _ ->
-                                    val fastCal = Calendar.getInstance()
-                                    fastCal.set(y, m, 1)
-                                    calendarViewDate = fastCal
-                                }, calendarViewDate.get(Calendar.YEAR), calendarViewDate.get(Calendar.MONTH), 1).show()
+                                DatePickerDialog(
+                                    context,
+                                    { _, y, m, _ ->
+                                        val fastCal = Calendar.getInstance()
+                                        fastCal.set(y, m, 1)
+                                        calendarViewDate = fastCal
+                                    },
+                                    calendarViewDate.get(Calendar.YEAR),
+                                    calendarViewDate.get(Calendar.MONTH),
+                                    1
+                                ).show()
                             }
                         )
 
@@ -111,7 +106,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                             val newCal = calendarViewDate.clone() as Calendar
                             newCal.add(Calendar.MONTH, 1)
                             calendarViewDate = newCal
-                        }) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "Next Month") }
+                        }) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "下個月") }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -121,25 +116,41 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                         calendarContext = calendarViewDate,
                         recordsList = homeViewModel.currentMonthRecords,
                         onDayClick = { selectedDayCal ->
-                            // REQUIREMENT 3.3: Day selection evaluation overlay pipeline
-                            val matchedRecord = homeViewModel.currentMonthRecords.firstOrNull { log ->
-                                val c1 = Calendar.getInstance().apply { timeInMillis = log.date }
-                                c1.get(Calendar.DAY_OF_MONTH) == selectedDayCal.get(Calendar.DAY_OF_MONTH)
+                            // Evaluate structural parameters when any day tile is activated
+                            val match = homeViewModel.currentMonthRecords.firstOrNull { log ->
+                                val checkCal =
+                                    Calendar.getInstance().apply { timeInMillis = log.date }
+                                checkCal.get(Calendar.DAY_OF_MONTH) == selectedDayCal.get(Calendar.DAY_OF_MONTH) &&
+                                        checkCal.get(Calendar.MONTH) == selectedDayCal.get(Calendar.MONTH) &&
+                                        checkCal.get(Calendar.YEAR) == selectedDayCal.get(Calendar.YEAR)
                             }
-                            if (matchedRecord != null) {
-                                reviewedRecordDay = matchedRecord
-                                reviewedWorkplaceName = workplaceViewModel.workplaces.firstOrNull { it.id == matchedRecord.workplaceId }?.name ?: "Unknown"
+
+                            selectedCalendarDay = selectedDayCal
+                            existingRecordForDay = match
+
+                            if (match != null) {
+                                // If editing an existing item, seed states with current historical values
+                                selectedShiftType = match.shiftType
+                                manualBaseHours = match.baseHours.toString()
+                                manualOtHours = match.otHours.toString()
+                                targetWorkplace =
+                                    workplaceViewModel.workplaces.firstOrNull { it.id == match.workplaceId }
+                            } else {
+                                // Clear inputs out for clean entry setup
+                                selectedShiftType = "FULL_DAY"
+                                manualBaseHours = "8"
+                                manualOtHours = "0"
+                                if (availableWorkplaces.isNotEmpty()) targetWorkplace =
+                                    availableWorkplaces.first()
                             }
                         }
                     )
                 }
             }
         }
-
         // --- STATS OVERVIEW CARD COMPONENT ROW ---
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                // First Row: 2-Column Split (Days vs OT Hours)
+            Card(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -153,50 +164,68 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
 
                     Card(modifier = Modifier.weight(1f)) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Work Days", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
+                            Text("本月工作日數", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "${if (totalDays % 1f == 0f) totalDays.toInt() else String.format(Locale.getDefault(), "%.1f", totalDays)} Days",
+                                text = "${if (totalDays % 1f == 0f) totalDays.toInt() else String.format(Locale.getDefault(), "%.1f", totalDays)} 日",
                                 style = MaterialTheme.typography.headlineMedium
                             )
                         }
                     }
                     Card(modifier = Modifier.weight(1f)) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Overtime", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
+                            Text("OT時數", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = "$totalOtHours hrs", style = MaterialTheme.typography.headlineMedium)
+                            Text(text = "$totalOtHours 小時", style = MaterialTheme.typography.headlineMedium)
                         }
-                    }
-                }
-
-                // Second Row: Full Width Estimated Income
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Est. Month Income", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "\$${String.format(Locale.getDefault(), "%.2f", homeViewModel.currentMonthSalary)}",
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
                     }
                 }
             }
         }
+    }
+    selectedCalendarDay?.let { targetDayCal ->
+        Dialog(onDismissRequest = { selectedCalendarDay = null }) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
 
-        // --- ADD WORKING RECORD FORM SHEET PANEL ---
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Add Working Record", style = MaterialTheme.typography.titleMedium)
+                    // Dialog Header with Exit Element
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (existingRecordForDay == null) "新增工作記錄" else "修改工作記錄",
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            Text(
+                                text = dayTitleFormat.format(targetDayCal.time),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+                        IconButton(onClick = { selectedCalendarDay = null }) {
+                            Icon(Icons.Default.Close, contentDescription = "Exit Dialog")
+                        }
+                    }
 
-                    if (availableWorkplaces.isEmpty()) {
-                        Text("No active workplaces available. Head to Management settings tab.", color = Color.Gray)
+                    HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+
+                    if (availableWorkplaces.isEmpty() && existingRecordForDay == null) {
+                        Text("沒有工作地點，請先到下面「地盤」頁面新增工作地點。", color = Color.Red)
                     } else {
+                        // Workplace Target Selector Row
                         Box(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedButton(onClick = { activeWpDropdownExpanded = true }, modifier = Modifier.fillMaxWidth()) {
-                                Text("Workplace: ${targetWorkplace?.name ?: "Select Target"}")
+                            OutlinedButton(
+                                onClick = { activeWpDropdownExpanded = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = existingRecordForDay == null // Keep workplace locked to avoid cross-shifting confusion
+                            ) {
+                                Text("工作地點: ${targetWorkplace?.name ?: "請選擇工作地點"}")
                             }
                             DropdownMenu(expanded = activeWpDropdownExpanded, onDismissRequest = { activeWpDropdownExpanded = false }) {
                                 availableWorkplaces.forEach { wp ->
@@ -205,12 +234,10 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                             }
                         }
 
-                        OutlinedButton(onClick = { formDatePicker.show() }, modifier = Modifier.fillMaxWidth()) {
-                            Text("Date: ${dateFormat.format(logDate.time)}")
-                        }
-
+                        // Shift Presets Chips Layout
+                        //Text("Shift Presets", style = MaterialTheme.typography.labelMedium)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("FULL_DAY" to "Full", "HALF_DAY" to "Half", "CUSTOM" to "Custom").forEach { preset ->
+                            listOf("FULL_DAY" to "全日", "HALF_DAY" to "半工", "CUSTOM" to "自定").forEach { preset ->
                                 FilterChip(
                                     selected = selectedShiftType == preset.first,
                                     onClick = {
@@ -226,84 +253,58 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                             }
                         }
 
+                        // Hour Manual Forms Input Fields Block
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedTextField(value = manualBaseHours, onValueChange = { if (selectedShiftType == "CUSTOM") manualBaseHours = it }, label = { Text("Base Hours") }, enabled = selectedShiftType == "CUSTOM", modifier = Modifier.weight(1f))
-                            OutlinedTextField(value = manualOtHours, onValueChange = { manualOtHours = it }, label = { Text("OT Hours") }, modifier = Modifier.weight(1f))
+                            OutlinedTextField(
+                                value = manualBaseHours,
+                                onValueChange = { if (selectedShiftType == "CUSTOM") manualBaseHours = it },
+                                label = { Text("基本工時") },
+                                enabled = selectedShiftType == "CUSTOM",
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = manualOtHours,
+                                onValueChange = { manualOtHours = it },
+                                label = { Text("OT時數") },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
 
-                        Button(
-                            onClick = {
-                                val wpId = targetWorkplace?.id
-                                val base = manualBaseHours.toFloatOrNull() ?: 0f
-                                val ot = manualOtHours.toFloatOrNull() ?: 0f
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                                if (wpId != null) {
-                                    if (homeViewModel.checkConflict(wpId, logDate.timeInMillis)) {
-                                        pendingOverrideData = WorkRecord(workplaceId = wpId, date = logDate.timeInMillis, shiftType = selectedShiftType, baseHours = base, otHours = ot)
-                                    } else {
-                                        homeViewModel.logShiftDirect(wpId, logDate.timeInMillis, selectedShiftType, base, ot, calendarViewDate)
+                        // Bottom Actions Row Layer
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            // Render deletion toggle button ONLY if an entry has pre-existing records data
+                            if (existingRecordForDay != null) {
+                                TextButton(
+                                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                    onClick = {
+                                        homeViewModel.deleteRecord(existingRecordForDay!!.id, calendarViewDate)
+                                        selectedCalendarDay = null
+                                    }
+                                ) {
+                                    Text("刪除記錄")
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.width(1.dp)) // Spacer placeholder layout balancing alignment
+                            }
 
-                                        // RESET ALIGNMENT ACTION: Reset form tracking states back to today
-                                        logDate = Calendar.getInstance()
-                                        selectedShiftType = "FULL_DAY"
-                                        manualBaseHours = "8"
-                                        manualOtHours = "0"
+                            Button(
+                                onClick = {
+                                    val wpId = targetWorkplace?.id
+                                    val base = manualBaseHours.toFloatOrNull() ?: 0f
+                                    val ot = manualOtHours.toFloatOrNull() ?: 0f
+
+                                    if (wpId != null) {
+                                        // Logging uses override logic naturally to streamline updates natively
+                                        homeViewModel.logShiftDirect(wpId, targetDayCal.timeInMillis, selectedShiftType, base, ot, calendarViewDate)
+                                        selectedCalendarDay = null
                                     }
                                 }
-                            },
-                            modifier = Modifier.align(Alignment.End)
-                        ) { Text("Log Shift") }
-                    }
-                }
-            }
-        }
-    }
-
-    // --- REQUIREMENT 2.1: OVERRIDE PROTECTION CONFIRMATION DIALOG ---
-    pendingOverrideData?.let { record ->
-        AlertDialog(
-            onDismissRequest = { pendingOverrideData = null },
-            title = { Text("Override Existing Record?") },
-            text = { Text("Your action will override the old record logged for this day. Do you want to continue?") },
-            // Inside your AlertDialog confirmButton click listener:
-            confirmButton = {
-                Button(onClick = {
-                    homeViewModel.logShiftDirect(record.workplaceId, record.date, record.shiftType, record.baseHours, record.otHours, calendarViewDate)
-                    pendingOverrideData = null
-
-                    // RESET ALIGNMENT ACTION
-                    logDate = Calendar.getInstance()
-                    selectedShiftType = "FULL_DAY"
-                    manualBaseHours = "8"
-                    manualOtHours = "0"
-                }) { Text("Update") }
-            },
-            dismissButton = { TextButton(onClick = { pendingOverrideData = null }) { Text("Cancel") } }
-        )
-    }
-
-    // --- REQUIREMENT 3.3: REVIEW / DELETE OVERLAY MODAL SHEET ---
-    reviewedRecordDay?.let { record ->
-        Dialog(onDismissRequest = { reviewedRecordDay = null }) {
-            Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Review Shift Log", style = MaterialTheme.typography.titleLarge)
-                    HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
-                    Text("Workplace: $reviewedWorkplaceName")
-                    Text("Date: ${dateFormat.format(Date(record.date))}")
-                    Text("Base Hours Worked: ${record.baseHours}h")
-                    Text("OT Hours Worked: ${record.otHours}h")
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color.Red),
-                            onClick = {
-                                homeViewModel.deleteRecord(record.id, calendarViewDate)
-                                reviewedRecordDay = null
+                            ) {
+                                Text(if (existingRecordForDay == null) "新增記錄" else "保存更改")
                             }
-                        ) { Text("Remove Record") }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(onClick = { reviewedRecordDay = null }) { Text("Close") }
+                        }
                     }
                 }
             }
