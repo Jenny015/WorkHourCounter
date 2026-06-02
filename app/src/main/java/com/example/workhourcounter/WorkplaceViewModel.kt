@@ -31,4 +31,14 @@ class WorkplaceViewModel(application: Application) : AndroidViewModel(applicatio
         dbHelper.insertWorkplace(newWorkplace)
         loadWorkplaces() // Refresh UI list
     }
+
+    fun updateWorkplace(id: Long, name: String, status: String) {
+        dbHelper.updateWorkplace(id, name, status)
+        loadWorkplaces() // Refresh the list
+    }
+
+    fun deleteWorkplace(id: Long) {
+        dbHelper.deleteWorkplaceWithRecords(id)
+        loadWorkplaces() // Refresh the list
+    }
 }

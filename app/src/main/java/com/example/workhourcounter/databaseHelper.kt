@@ -128,4 +128,31 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         cursor.close()
         return count
     }
+
+    // Update name and status of an existing workplace
+    fun updateWorkplace(id: Long, newName: String, newStatus: String): Int {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(WP_NAME, newName)
+            put(WP_STATUS, newStatus)
+        }
+        // Updates the row where the ID matches
+        return db.update(TABLE_WORKPLACE, values, "$WP_ID = ?", arrayOf(id.toString()))
+    }
+
+    // Delete a workplace AND its cascading records
+    fun deleteWorkplaceWithRecords(workplaceId: Long) {
+        val db = this.writableDatabase
+        db.beginTransaction()
+        try {
+            // First, delete all records linked to this workplace
+            db.delete(TABLE_RECORD, "$REC_WP_ID = ?", arrayOf(workplaceId.toString()))
+            // Second, delete the workplace itself
+            db.delete(TABLE_WORKPLACE, "$WP_ID = ?", arrayOf(workplaceId.toString()))
+
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
 }
