@@ -12,11 +12,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.workhourcounter.screens.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
     val items = listOf(Screen.Workplace, Screen.Cards, Screen.Home, Screen.Dashboard, Screen.Settings)
+    val workplaceViewModel: WorkplaceViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -28,15 +30,7 @@ fun MainScreen() {
                 items.forEach { screen ->
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
-                        label = {
-                            Text(
-                                text = screen.title,
-                                style = androidx.compose.ui.text.TextStyle(
-                                    fontSize = 16.sp,
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium // Optional: Make it slightly bolder
-                                )
-                            )
-                        },
+                        label = {Text(text = screen.title, style = MaterialTheme.typography.titleLarge)},
 
                         selected = currentRoute == screen.route,
                         onClick = {
@@ -67,7 +61,9 @@ fun MainScreen() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Home.route) { HomeScreen() }
-            composable(Screen.Workplace.route) { WorkplaceScreen() }
+            composable(Screen.Workplace.route) {
+                WorkplaceScreen(viewModel = workplaceViewModel)
+            }
             composable(Screen.Dashboard.route) { DashboardScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
             composable(Screen.Cards.route) { CardScreen() }
