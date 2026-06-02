@@ -36,18 +36,24 @@ fun StatisticsScreen(viewModel: StatisticsViewModel) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
                             Text("總工數", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
-                            Text("${viewModel.totalDaysLogged} days", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text("${viewModel.totalDaysLogged} 日", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         }
                         Column {
                             Text("總工時", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
-                            Text("${viewModel.lifetimeHours}h", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text("${viewModel.lifetimeHours}h小時", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(thickness = 1.dp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         // --- SEGMENT 2: BREAKDOWN BY INDIVIDUAL WORKPLACE ---
@@ -57,7 +63,7 @@ fun StatisticsScreen(viewModel: StatisticsViewModel) {
 
         if (viewModel.workplaceStatsList.isEmpty()) {
             item {
-                Text("未有出勤記錄", color = Color.Gray, style = MaterialTheme.typography.bodyLarge)
+                Text("未有出勤記錄", color = Color.Gray, style = MaterialTheme.typography.titleMedium)
             }
         } else {
             items(viewModel.workplaceStatsList) { stat ->
@@ -80,6 +86,12 @@ fun StatisticsScreen(viewModel: StatisticsViewModel) {
             }
         }
 
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(thickness = 1.dp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         // --- SEGMENT 3: MONTHLY HISTORY TRENDS ---
         item {
             Text("每月出勤記錄", style = MaterialTheme.typography.titleLarge)
@@ -87,7 +99,7 @@ fun StatisticsScreen(viewModel: StatisticsViewModel) {
 
         if (viewModel.monthlyTrendList.isEmpty()) {
             item {
-                Text("未有出勤記錄。", color = Color.Gray, style = MaterialTheme.typography.bodyLarge)
+                Text("未有出勤記錄。", color = Color.Gray, style = MaterialTheme.typography.titleMedium)
             }
         } else {
             items(viewModel.monthlyTrendList) { entry ->

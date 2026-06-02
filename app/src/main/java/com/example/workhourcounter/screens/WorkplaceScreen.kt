@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -26,12 +27,9 @@ enum class ExecutionMode { NORMAL, PENDING_EDIT, PENDING_DELETE }
 
 @Composable
 fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
-    var nameInput by remember { mutableStateOf("") }
-    var statusInput by remember { mutableStateOf("主力盤") }
-    var isDropdownExpanded by remember { mutableStateOf(false) }
-
-    // Track if we are editing an existing item
-    var editingWorkplaceId by remember { mutableStateOf<Long?>(null) }
+    var workplaceName by remember { mutableStateOf("") }
+    var selectedStatus by remember { mutableStateOf("主力盤") }
+    var statusDropdownExpanded by remember { mutableStateOf(false) }
 
     // Track deletion dialog state
     var workplaceToDelete by remember { mutableStateOf<Workplace?>(null) }
@@ -42,180 +40,223 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
 
     val statusOptions = listOf("主力", "少去", "完工")
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(text = "管理工作地點", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(12.dp))
+    // Dialog control states
+    var isDialogOpen by remember { mutableStateOf(false) }
+    var editingWorkplace by remember { mutableStateOf<Workplace?>(null) }
 
-        // --- FORM PANEL ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(text = if (editingWorkplaceId == null) "新增工作地點" else "更新工作地點",
-                    style = MaterialTheme.typography.titleLarge)
-
-                // Name Input
-                OutlinedTextField(
-                    value = nameInput,
-                    onValueChange = { nameInput = it },
-                    label = { Text("地盤名稱", style = MaterialTheme.typography.bodyLarge)},
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Status Selector (Dropdown)
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = { isDropdownExpanded = true },
-                        modifier = Modifier.fillMaxWidth()
+    Scaffold(
+        // --- REQUIREMENT 1: FLOATING ACTION BUTTON ---
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    editingWorkplace = null
+                    workplaceName = ""
+                    selectedStatus = "主力"
+                    isDialogOpen = true
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Workplace")
+            }
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)
+        )
+        {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("你的工作地點", style = MaterialTheme.typography.titleLarge)
+                Row {
+                    // Edit Phase Toggle
+                    IconButton(
+                        onClick = {
+                            currentMode =
+                                if (currentMode == ExecutionMode.PENDING_EDIT) ExecutionMode.NORMAL else ExecutionMode.PENDING_EDIT
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (currentMode == ExecutionMode.PENDING_EDIT) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                        )
                     ) {
-                        Text("狀態: $statusInput", style = MaterialTheme.typography.bodyLarge)
+                        Icon(Icons.Default.Edit, contentDescription = "開啟編輯模式")
                     }
-                    DropdownMenu(
-                        expanded = isDropdownExpanded,
-                        onDismissRequest = { isDropdownExpanded = false }
+
+                    // Delete Phase Toggle
+                    IconButton(
+                        onClick = {
+                            currentMode =
+                                if (currentMode == ExecutionMode.PENDING_DELETE) ExecutionMode.NORMAL else ExecutionMode.PENDING_DELETE
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (currentMode == ExecutionMode.PENDING_DELETE) MaterialTheme.colorScheme.errorContainer else Color.Transparent
+                        )
                     ) {
-                        statusOptions.forEach { status ->
-                            DropdownMenuItem(
-                                text = { Text(status, style = MaterialTheme.typography.bodyLarge) },
-                                onClick = {
-                                    statusInput = status
-                                    isDropdownExpanded = false
-                                }
-                            )
-                        }
+                        Icon(Icons.Default.Delete, contentDescription = "開啟刪除模式")
                     }
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+            }
+            // Action Status Warning Banner
+            if (currentMode != ExecutionMode.NORMAL) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (currentMode == ExecutionMode.PENDING_EDIT) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
-                    // Show a cancel button if we are in edit mode
-                    if (editingWorkplaceId != null) {
-                        TextButton(onClick = {
-                            editingWorkplaceId = null
-                            nameInput = ""
-                            statusInput = "主力"
-                        }) {
-                            Text("取消", style = MaterialTheme.typography.bodyLarge)
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
+                    Text(
+                        text = if (currentMode == ExecutionMode.PENDING_EDIT) "🔧 點擊一個工作地點以編輯." else "⚠️ 點擊一個工作地點以刪除.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally)
+                    )
+                }
+            }
+            Text(
+                text = "點擊任意工作地點查看出勤記錄",
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Spacer(modifier = Modifier.height(8.dp))
 
-                // Submit Button
-                Button(
-                    onClick = {
-                        if (nameInput.isNotBlank()) {
-                            val currentId = editingWorkplaceId
-                            if (currentId == null) {
-                                viewModel.addWorkplace(nameInput, statusInput)
-                            } else {
-                                viewModel.updateWorkplace(currentId, nameInput, statusInput)
-                                editingWorkplaceId = null // Exit edit mode
+            // --- DYNAMIC WORKPLACE LIST ---
+            if (viewModel.workplaces.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "未有任何工作地點，請先按右下角「＋」新增工作地點。",
+                        color = Color.Gray,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Use 'items' to dynamically generate list elements!
+                    items(viewModel.workplaces) { wp ->
+                        WorkplaceItemRow(
+                            workplace = wp,
+                            onCardClick = {
+                                // Route interaction based on current active execution engine state
+                                when (currentMode) {
+                                    ExecutionMode.PENDING_EDIT -> {
+                                        editingWorkplace = wp
+                                        workplaceName = wp.name
+                                        selectedStatus = wp.status
+                                        isDialogOpen = true
+                                        currentMode = ExecutionMode.NORMAL // Clear immediately
+                                    }
+
+                                    ExecutionMode.PENDING_DELETE -> {
+                                        workplaceToDelete = wp
+                                        deleteConfirmationInput = ""
+                                        currentMode = ExecutionMode.NORMAL // Clear immediately
+                                    }
+
+                                    ExecutionMode.NORMAL -> {
+                                        workplaceForHistory = wp // Launch record history popup
+                                    }
+                                }
                             }
-                            nameInput = ""
-                            statusInput = "主力"
-                        }
+                        )
                     }
-                ) {
-                    Text(if (editingWorkplaceId == null) "新增工作地點" else "儲存變更", style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
     }
-        Spacer(modifier = Modifier.height(24.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("你的工作地點", style = MaterialTheme.typography.titleLarge)
-            Row {
-                // Edit Phase Toggle
-                IconButton(
-                    onClick = {
-                        currentMode = if (currentMode == ExecutionMode.PENDING_EDIT) ExecutionMode.NORMAL else ExecutionMode.PENDING_EDIT
-                    },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = if (currentMode == ExecutionMode.PENDING_EDIT) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-                    )
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = "開啟編輯模式")
-                }
 
-                // Delete Phase Toggle
-                IconButton(
-                    onClick = {
-                        currentMode = if (currentMode == ExecutionMode.PENDING_DELETE) ExecutionMode.NORMAL else ExecutionMode.PENDING_DELETE
-                    },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = if (currentMode == ExecutionMode.PENDING_DELETE) MaterialTheme.colorScheme.errorContainer else Color.Transparent
-                    )
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = "開啟刪除模式")
-                }
-            }
-        }
-        // Action Status Warning Banner
-        if (currentMode != ExecutionMode.NORMAL) {
+    if (isDialogOpen) {
+        Dialog(onDismissRequest = { isDialogOpen = false }) {
             Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = if (currentMode == ExecutionMode.PENDING_EDIT) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
-                ),
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Text(
-                    text = if (currentMode == ExecutionMode.PENDING_EDIT) "🔧 點擊一個工作地點以在上方編輯." else "⚠️ 點擊一個工作地點以刪除.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally)
-                )
-            }
-        }
-        Text(
-            text = "點擊任意工作地點查看出勤記錄",
-            style = MaterialTheme.typography.bodyLarge
-        )
-        Spacer(modifier = Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    Alignment.CenterHorizontally
+                ) {
+                    // Dialog Title Bar Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (editingWorkplace == null) "新增工作地點" else "修改工作地點",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        IconButton(onClick = { isDialogOpen = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "關閉")
+                        }
+                    }
 
-        // --- DYNAMIC WORKPLACE LIST ---
-        if (viewModel.workplaces.isEmpty()) {
-            Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                Text("未有任何工作地點", color = Color.Gray, style = MaterialTheme.typography.titleLarge)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Use 'items' to dynamically generate list elements!
-                items(viewModel.workplaces) { workplace ->
-                    WorkplaceItemRow(
-                        workplace = workplace,
-                        onCardClick = {
-                            // Route interaction based on current active execution engine state
-                            when (currentMode) {
-                                ExecutionMode.PENDING_EDIT -> {
-                                    editingWorkplaceId = workplace.id
-                                    nameInput = workplace.name
-                                    statusInput = workplace.status
-                                    currentMode = ExecutionMode.NORMAL // Clear immediately
-                                }
-                                ExecutionMode.PENDING_DELETE -> {
-                                    workplaceToDelete = workplace
-                                    deleteConfirmationInput = ""
-                                    currentMode = ExecutionMode.NORMAL // Clear immediately
-                                }
-                                ExecutionMode.NORMAL -> {
-                                    workplaceForHistory = workplace // Launch record history popup
-                                }
+                    HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+
+                    // Name Input Fields Framework
+                    OutlinedTextField(
+                        value = workplaceName,
+                        onValueChange = { workplaceName = it },
+                        label = { Text("地盤名稱 ", style = MaterialTheme.typography.bodyLarge) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { statusDropdownExpanded = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("狀態: $selectedStatus", style = MaterialTheme.typography.bodyLarge)
+                        }
+                        DropdownMenu(
+                            expanded = statusDropdownExpanded,
+                            onDismissRequest = { statusDropdownExpanded = false }
+                        ) {
+                            statusOptions.forEach { status ->
+                                DropdownMenuItem(
+                                    text = { Text(status, style = MaterialTheme.typography.bodyLarge) },
+                                    onClick = {
+                                        selectedStatus = status
+                                        statusDropdownExpanded = false
+                                    }
+                                )
                             }
                         }
-                    )
+                    }
+
+                    // Bottom Action
+                    Button(
+                        onClick = {
+                            if (workplaceName.isNotBlank()) {
+                                if (editingWorkplace == null) {
+                                    // Process add query insertion frameworks pipelines
+                                    viewModel.addWorkplace(workplaceName, selectedStatus)
+                                } else {
+                                    // Process modify tracking index pipelines updates parameters
+                                    viewModel.updateWorkplace(
+                                        editingWorkplace!!.id,
+                                        workplaceName,
+                                        selectedStatus
+                                    )
+                                }
+                                isDialogOpen = false
+                            }
+                        }
+                    ) {
+                        Text(text = if (editingWorkplace == null) "新增" else "保存")
+                    }
                 }
             }
         }
+    }
 
         // --- POPUP DIALOG: HISTORY LIST VIEW ---
         workplaceForHistory?.let { workplace ->
@@ -291,14 +332,14 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
             }
         }
 
-        workplaceToDelete?.let { workplace ->
+        workplaceToDelete?.let { wp ->
             AlertDialog(
                 onDismissRequest = { workplaceToDelete = null },
                 title = { Text("注意: 刪除工作地點屬於不可撒消的操作") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
-                            text = "此行為將一併刪除所有 \"${workplace.name}\" 地盤的出勤記錄, 是否要刪除此工作地點?",
+                            text = "此行為將一併刪除所有 \"${wp.name}\" 地盤的出勤記錄, 是否要刪除此工作地點?",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyLarge
                         )
@@ -317,12 +358,12 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         enabled = deleteConfirmationInput.trim() == "刪除",
                         onClick = {
-                            viewModel.deleteWorkplace(workplace.id)
+                            viewModel.deleteWorkplace(wp.id)
                             // If we were editing this specific workplace, clear out the form
-                            if (editingWorkplaceId == workplace.id) {
-                                editingWorkplaceId = null
-                                nameInput = ""
-                                statusInput = "主力"
+                            if (editingWorkplace!!.id == wp.id) {
+                                editingWorkplace = null
+                                workplaceName = ""
+                                selectedStatus = "主力"
                             }
                             workplaceToDelete = null
                         }
@@ -334,7 +375,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
             )
         }
     }
-}
+
 
 @Composable
 fun WorkplaceItemRow(workplace: Workplace, onCardClick: () -> Unit) {

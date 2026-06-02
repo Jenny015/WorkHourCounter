@@ -241,7 +241,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                         // Shift Presets Chips Layout
                         //Text("Shift Presets", style = MaterialTheme.typography.labelMedium)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("FULL_DAY" to "全日", "HALF_DAY" to "半工", "CUSTOM" to "自定").forEach { preset ->
+                            listOf("FULL_DAY" to "全日", "HALF_DAY" to "半工", "CUSTOM" to "自定義").forEach { preset ->
                                 FilterChip(
                                     selected = selectedShiftType == preset.first,
                                     onClick = {
@@ -252,7 +252,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                             "CUSTOM" -> { manualBaseHours = ""; manualOtHours = "0" }
                                         }
                                     },
-                                    label = { Text(preset.second, style = MaterialTheme.typography.bodyLarge) }
+                                    label = { Text(preset.second, style = MaterialTheme.typography.titleMedium) }
                                 )
                             }
                         }
