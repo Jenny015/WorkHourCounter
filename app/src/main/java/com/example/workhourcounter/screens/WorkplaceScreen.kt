@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,10 +40,10 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
     var currentMode by remember { mutableStateOf(ExecutionMode.NORMAL) }
     var workplaceForHistory by remember { mutableStateOf<Workplace?>(null) }
 
-    val statusOptions = listOf("主力盤", "較少去", "已起貨")
+    val statusOptions = listOf("主力盤", "較少去", "已完工")
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(text = "工作地盤管理", style = MaterialTheme.typography.headlineMedium)
+        Text(text = "管理工作地點", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(12.dp))
 
         // --- FORM PANEL ---
@@ -51,7 +52,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(text = if (editingWorkplaceId == null) "加新地盤" else "修改資訊",
+                Text(text = if (editingWorkplaceId == null) "新增工作地點" else "更新工作地點",
                     style = MaterialTheme.typography.titleLarge)
 
                 // Name Input
@@ -119,7 +120,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         }
                     }
                 ) {
-                    Text(if (editingWorkplaceId == null) "新增地盤" else "儲存變更", style = MaterialTheme.typography.bodyLarge)
+                    Text(if (editingWorkplaceId == null) "新增工作地點" else "儲存變更", style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
@@ -141,7 +142,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         containerColor = if (currentMode == ExecutionMode.PENDING_EDIT) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                     )
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = "開啟編輯地盤模式")
+                    Icon(Icons.Default.Edit, contentDescription = "開啟編輯模式")
                 }
 
                 // Delete Phase Toggle
@@ -153,7 +154,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         containerColor = if (currentMode == ExecutionMode.PENDING_DELETE) MaterialTheme.colorScheme.errorContainer else Color.Transparent
                     )
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = "開啟刪除地盤模式")
+                    Icon(Icons.Default.Delete, contentDescription = "開啟刪除模式")
                 }
             }
         }
@@ -166,14 +167,14 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
             ) {
                 Text(
-                    text = if (currentMode == ExecutionMode.PENDING_EDIT) "🔧 點擊一個地盤以編輯." else "⚠️ 點擊一個地盤以刪除.",
+                    text = if (currentMode == ExecutionMode.PENDING_EDIT) "🔧 點擊一個工作地點以編輯." else "⚠️ 點擊一個工作地點以刪除.",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally)
                 )
             }
         }
         Text(
-            text = "點擊任意地盤查看出勤記錄",
+            text = "點擊任意工作地點查看出勤記錄",
             style = MaterialTheme.typography.bodyMedium
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -243,12 +244,16 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
-                        Divider()
+                        HorizontalDivider(
+                            Modifier,
+                            DividerDefaults.Thickness,
+                            DividerDefaults.color
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
 
                         if (records.isEmpty()) {
                             Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                                Text("此地盤暫沒有任何出勤記錄", color = Color.Gray)
+                                Text("此工作地點暫沒有任何出勤記錄", color = Color.Gray)
                             }
                         } else {
                             LazyColumn(
@@ -268,12 +273,16 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                                         )
                                         // Right side: Calculated cumulative work hours
                                         Text(
-                                            text = "${log.baseHours + log.otHours} hrs",
+                                            text = "${log.baseHours + log.otHours} 小時",
                                             style = MaterialTheme.typography.titleMedium,
                                             color = MaterialTheme.colorScheme.secondary
                                         )
                                     }
-                                    Divider(color = MaterialTheme.colorScheme.surfaceVariant)
+                                    HorizontalDivider(
+                                        Modifier,
+                                        DividerDefaults.Thickness,
+                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                    )
                                 }
                             }
                         }
@@ -285,11 +294,11 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
         workplaceToDelete?.let { workplace ->
             AlertDialog(
                 onDismissRequest = { workplaceToDelete = null },
-                title = { Text("注意: 刪除地盤屬於不可撒消的操作") },
+                title = { Text("注意: 刪除工作地點屬於不可撒消的操作") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
-                            text = "此行為將一併刪除所有 \"${workplace.name}\" 地盤的出勤記錄, 是否要刪除此地盤?",
+                            text = "此行為將一併刪除所有 \"${workplace.name}\" 地盤的出勤記錄, 是否要刪除此工作地點?",
                             color = MaterialTheme.colorScheme.error
                         )
                         Text(text = "請在下方欄位輸入 \"刪除\" 以確認:")
@@ -316,7 +325,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                             }
                             workplaceToDelete = null
                         }
-                    ) {Text("刪除地盤")}
+                    ) {Text("刪除工作地點")}
                 },
                 dismissButton = {
                     TextButton(onClick = { workplaceToDelete = null }) {Text("取消")}

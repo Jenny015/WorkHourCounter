@@ -4,6 +4,8 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import java.util.Calendar
+import androidx.core.database.sqlite.transaction
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -98,7 +100,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     // --- DATABASE OPERATIONS ---
-
+    //  --- Workplace ---
     fun insertWorkplace(workplace: Workplace): Long {
         val db = this.writableDatabase
         val values = ContentValues().apply {
@@ -120,7 +122,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             CASE $WP_STATUS
                 WHEN '主力盤' THEN 1
                 WHEN '較少去' THEN 2
-                WHEN '已起貨' THEN 3
+                WHEN '已完工' THEN 3
                 ELSE 4
             End ASC,
             $WP_START_DATE DESC
@@ -176,16 +178,15 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     // Delete a workplace AND its cascading records
     fun deleteWorkplaceWithRecords(workplaceId: Long) {
         val db = this.writableDatabase
-        db.beginTransaction()
-        try {
-            // First, delete all records linked to this workplace
-            db.delete(TABLE_RECORD, "$REC_WP_ID = ?", arrayOf(workplaceId.toString()))
-            // Second, delete the workplace itself
-            db.delete(TABLE_WORKPLACE, "$WP_ID = ?", arrayOf(workplaceId.toString()))
+        db.transaction {
+            try {
+                // First, delete all records linked to this workplace
+                delete(TABLE_RECORD, "$REC_WP_ID = ?", arrayOf(workplaceId.toString()))
+                // Second, delete the workplace itself
+                delete(TABLE_WORKPLACE, "$WP_ID = ?", arrayOf(workplaceId.toString()))
 
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
+            } finally {
+            }
         }
     }
 
@@ -217,7 +218,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     // --- SALARY & SETTINGS OPERATIONS ---
-
     fun insertOrUpdateSalary(effectiveDateMs: Long, amount: Float) {
         val db = this.writableDatabase
         val values = ContentValues().apply {
@@ -267,5 +267,67 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return day
+    }
+
+    //  --- Home & Record ---
+    // Insert a shift log record
+    fun insertRecord(record: WorkRecord): Long {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(REC_WP_ID, record.workplaceId)
+            put(REC_DATE, record.date)
+            put(REC_SHIFT_TYPE, record.shiftType)
+            put(REC_BASE_HOURS, record.baseHours)
+            put(REC_OT_HOURS, record.otHours)
+        }
+        return db.insert(TABLE_RECORD, null, values)
+    }
+
+    // Fetch all records logged within a specific timestamp window range
+    fun getRecordsInWindow(startTimestamp: Long, endTimestamp: Long): List<WorkRecord> {
+        val list = mutableListOf<WorkRecord>()
+        val db = this.readableDatabase
+        val query = "SELECT * FROM $TABLE_RECORD WHERE $REC_DATE >= ? AND $REC_DATE <= ?"
+        val cursor = db.rawQuery(query, arrayOf(startTimestamp.toString(), endTimestamp.toString()))
+
+        if (cursor.moveToFirst()) {
+            do {
+                val record = WorkRecord(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow(REC_ID)),
+                    workplaceId = cursor.getLong(cursor.getColumnIndexOrThrow(REC_WP_ID)),
+                    date = cursor.getLong(cursor.getColumnIndexOrThrow(REC_DATE)),
+                    shiftType = cursor.getString(cursor.getColumnIndexOrThrow(REC_SHIFT_TYPE)),
+                    baseHours = cursor.getFloat(cursor.getColumnIndexOrThrow(REC_BASE_HOURS)),
+                    otHours = cursor.getFloat(cursor.getColumnIndexOrThrow(REC_OT_HOURS))
+                )
+                list.add(record)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    // Replace old record for that day, or insert fresh if new
+    fun overrideOrInsertRecord(record: WorkRecord) {
+        val db = this.writableDatabase
+
+        val cal = Calendar.getInstance().apply { timeInMillis = record.date }
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+        val startOfDay = cal.timeInMillis
+        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59)
+        val endOfDay = cal.timeInMillis
+
+        // Delete old record if it exists first
+        db.delete(TABLE_RECORD, "$REC_WP_ID = ? AND $REC_DATE >= ? AND $REC_DATE <= ?",
+            arrayOf(record.workplaceId.toString(), startOfDay.toString(), endOfDay.toString()))
+
+        // Insert new record
+        insertRecord(record)
+    }
+
+    // Delete a single record directly by ID
+    fun deleteRecordById(recordId: Long) {
+        val db = this.writableDatabase
+        db.delete(TABLE_RECORD, "$REC_ID = ?", arrayOf(recordId.toString()))
     }
 }
