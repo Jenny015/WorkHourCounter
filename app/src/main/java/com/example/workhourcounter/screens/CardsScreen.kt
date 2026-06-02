@@ -67,16 +67,29 @@ fun CardsScreen(viewModel: CardsViewModel) {
         }
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
-            Text(text = "Card Management", style = MaterialTheme.typography.headlineMedium)
+            Text(text = "我的工作證件", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(16.dp))
 
             if (viewModel.cardsList.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text("No cards stored yet.", color = Color.Gray)
+                    Text("未有任何工作證件，按右下角「＋」新增。", color = Color.Gray, style = MaterialTheme.typography.titleMedium)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
                     items(viewModel.cardsList) { card ->
+                        // Calculate time difference dynamically
+                        val currentTimeMs = System.currentTimeMillis()
+                        val oneMonthMs = 30L * 24 * 60 * 60 * 1000
+                        val diff = card.expireDate - currentTimeMs
+
+                        // Select background color based on warning condition
+                        val cardBackgroundColor = if (diff in 0..oneMonthMs) {
+                            Color(0xFFFFF9C4)
+                        } else if(diff < 0){
+                            Color(0xFFFFC4C4)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        }
                         Card(
                             modifier = Modifier.fillMaxWidth().clickable {
                                 editingCard = card
@@ -84,13 +97,28 @@ fun CardsScreen(viewModel: CardsViewModel) {
                                 noInput = card.no
                                 expirationCalendar = Calendar.getInstance().apply { timeInMillis = card.expireDate }
                                 showDialog = true
-                            }
+                            },
+                            colors = CardDefaults.cardColors(containerColor = cardBackgroundColor)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text(text = card.name, style = MaterialTheme.typography.titleLarge)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(text = card.name, style = MaterialTheme.typography.titleLarge)
+                                    // Optional visual badge indicator
+                                    if (diff <= oneMonthMs) {
+                                        Text(
+                                            text = if (diff > 0) "⚠️ 即將過期" else "⚠️ 已經過期",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                        )
+                                    }
+                                }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = "No: ${card.no}", style = MaterialTheme.typography.bodyMedium, color = Color.DarkGray)
-                                Text(text = "Expires: ${dateFormat.format(Date(card.expireDate))}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                Text(text = "編號: ${card.no}", style = MaterialTheme.typography.bodyLarge, color = Color.DarkGray)
+                                Text(text = "過期日: ${dateFormat.format(Date(card.expireDate))}", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
                             }
                         }
                     }
@@ -103,14 +131,14 @@ fun CardsScreen(viewModel: CardsViewModel) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text(if (editingCard == null) "Add New Card" else "Modify Card Parameters") },
+            title = { Text(if (editingCard == null) "新增工作證件" else "修改工作證件") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(value = nameInput, onValueChange = { nameInput = it }, label = { Text("Card Label Name") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = noInput, onValueChange = { noInput = it }, label = { Text("Card Identifier No") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = nameInput, onValueChange = { nameInput = it }, label = { Text("證件名稱", style = MaterialTheme.typography.bodyLarge) }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = noInput, onValueChange = { noInput = it }, label = { Text("證件編號", style = MaterialTheme.typography.bodyLarge) }, modifier = Modifier.fillMaxWidth())
 
                     OutlinedButton(onClick = { openDatePicker.show() }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Expiration Date: ${dateFormat.format(expirationCalendar.time)}")
+                        Text("過期日: ${dateFormat.format(expirationCalendar.time)}", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             },
@@ -125,7 +153,7 @@ fun CardsScreen(viewModel: CardsViewModel) {
                         }
                         showDialog = false
                     }
-                }) { Text("Save") }
+                }) { Text("保存", style = MaterialTheme.typography.bodyLarge) }
             },
             dismissButton = {
                 Row {
@@ -133,9 +161,9 @@ fun CardsScreen(viewModel: CardsViewModel) {
                         TextButton(
                             colors = ButtonDefaults.textButtonColors(contentColor = Color.Red),
                             onClick = { showDeleteConfirm = true }
-                        ) { Text("Delete") }
+                        ) { Text("刪除") }
                     }
-                    TextButton(onClick = { showDialog = false }) { Text("Cancel") }
+                    TextButton(onClick = { showDialog = false }) { Text("取消", style = MaterialTheme.typography.bodyLarge) }
                 }
             }
         )
@@ -145,8 +173,8 @@ fun CardsScreen(viewModel: CardsViewModel) {
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Confirm Erasure") },
-            text = { Text("Are you absolutely sure you want to delete this card parameter data file?") },
+            title = { Text("刪除證件") },
+            text = { Text("請問你確定要刪除這項資料嗎?", style = MaterialTheme.typography.bodyLarge) },
             confirmButton = {
                 Button(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
@@ -155,9 +183,9 @@ fun CardsScreen(viewModel: CardsViewModel) {
                         showDeleteConfirm = false
                         showDialog = false
                     }
-                ) { Text("Confirm Delete") }
+                ) { Text("碓定", style = MaterialTheme.typography.bodyLarge) }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("取消", style = MaterialTheme.typography.bodyLarge) } }
         )
     }
 }
