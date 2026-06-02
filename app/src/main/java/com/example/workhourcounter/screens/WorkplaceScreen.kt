@@ -40,7 +40,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
     var currentMode by remember { mutableStateOf(ExecutionMode.NORMAL) }
     var workplaceForHistory by remember { mutableStateOf<Workplace?>(null) }
 
-    val statusOptions = listOf("主力盤", "較少去", "已完工")
+    val statusOptions = listOf("主力", "少去", "完工")
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(text = "管理工作地點", style = MaterialTheme.typography.headlineMedium)
@@ -97,7 +97,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         TextButton(onClick = {
                             editingWorkplaceId = null
                             nameInput = ""
-                            statusInput = "主力盤"
+                            statusInput = "主力"
                         }) {
                             Text("取消", style = MaterialTheme.typography.bodyLarge)
                         }
@@ -116,7 +116,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                                 editingWorkplaceId = null // Exit edit mode
                             }
                             nameInput = ""
-                            statusInput = "主力盤"
+                            statusInput = "主力"
                         }
                     }
                 ) {
@@ -167,15 +167,15 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
             ) {
                 Text(
-                    text = if (currentMode == ExecutionMode.PENDING_EDIT) "🔧 點擊一個工作地點以編輯." else "⚠️ 點擊一個工作地點以刪除.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = if (currentMode == ExecutionMode.PENDING_EDIT) "🔧 點擊一個工作地點以在上方編輯." else "⚠️ 點擊一個工作地點以刪除.",
+                    style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally)
                 )
             }
         }
         Text(
             text = "點擊任意工作地點查看出勤記錄",
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyLarge
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -236,7 +236,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         ) {
                             Column {
                                 Text(text = workplace.name, style = MaterialTheme.typography.titleLarge)
-                                Text(text = "出勤記錄", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                                Text(text = "出勤記錄", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
                             }
                             IconButton(onClick = { workplaceForHistory = null }) {
                                 Icon(Icons.Default.Close, contentDescription = "關閉")
@@ -253,7 +253,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
 
                         if (records.isEmpty()) {
                             Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                                Text("此工作地點暫沒有任何出勤記錄", color = Color.Gray)
+                                Text("此工作地點暫沒有任何出勤記錄", color = Color.Gray, style = MaterialTheme.typography.titleLarge)
                             }
                         } else {
                             LazyColumn(
@@ -269,12 +269,12 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                                         // Left side: Date string formatted neatly
                                         Text(
                                             text = dateFormat.format(Date(log.date)),
-                                            style = MaterialTheme.typography.bodyLarge
+                                            style = MaterialTheme.typography.titleLarge
                                         )
                                         // Right side: Calculated cumulative work hours
                                         Text(
                                             text = "${log.baseHours + log.otHours} 小時",
-                                            style = MaterialTheme.typography.titleMedium,
+                                            style = MaterialTheme.typography.titleLarge,
                                             color = MaterialTheme.colorScheme.secondary
                                         )
                                     }
@@ -299,13 +299,14 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
                             text = "此行為將一併刪除所有 \"${workplace.name}\" 地盤的出勤記錄, 是否要刪除此工作地點?",
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
                         )
-                        Text(text = "請在下方欄位輸入 \"刪除\" 以確認:")
+                        Text(text = "請在下方欄位輸入 \"刪除\" 以確認:", style = MaterialTheme.typography.bodyLarge)
                         OutlinedTextField(
                             value = deleteConfirmationInput,
                             onValueChange = { deleteConfirmationInput = it },
-                            placeholder = { Text("刪除") },
+                            placeholder = { Text("刪除", style = MaterialTheme.typography.bodyLarge) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -321,14 +322,14 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                             if (editingWorkplaceId == workplace.id) {
                                 editingWorkplaceId = null
                                 nameInput = ""
-                                statusInput = "主力盤"
+                                statusInput = "主力"
                             }
                             workplaceToDelete = null
                         }
-                    ) {Text("刪除工作地點")}
+                    ) {Text("刪除工作地點", style = MaterialTheme.typography.bodyLarge)}
                 },
                 dismissButton = {
-                    TextButton(onClick = { workplaceToDelete = null }) {Text("取消")}
+                    TextButton(onClick = { workplaceToDelete = null }) {Text("取消", style = MaterialTheme.typography.bodyLarge)}
                 }
             )
         }
@@ -353,22 +354,17 @@ fun WorkplaceItemRow(workplace: Workplace, onCardClick: () -> Unit) {
                     text = "狀態: ${workplace.status}",
                     style = MaterialTheme.typography.bodyLarge,
                     color = when (workplace.status) {
-                        "主力盤" -> Color(0xFF035707)
-                        "較少去" -> Color(0xFF021da6)
+                        "主力" -> Color(0xFF035707)
+                        "少去" -> Color(0xFF021da6)
                         else -> Color(0xFF4d4d4d)
                     }
                 )
             }
             Column( horizontalAlignment = Alignment.End ) {
                 Text(
-                    text = "${workplace.totalDays}",
+                    text = "${workplace.totalDays} 日",
                     style = MaterialTheme.typography.headlineMedium, // Bold prominent number
                     color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "日",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Black
                 )
             }
         }

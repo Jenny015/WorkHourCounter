@@ -120,9 +120,9 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         SELECT * FROM $TABLE_WORKPLACE
         ORDER BY 
             CASE $WP_STATUS
-                WHEN '主力盤' THEN 1
-                WHEN '較少去' THEN 2
-                WHEN '已完工' THEN 3
+                WHEN '主力' THEN 1
+                WHEN '少去' THEN 2
+                WHEN '完工' THEN 3
                 ELSE 4
             End ASC,
             $WP_START_DATE DESC
@@ -217,58 +217,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return list
     }
 
-    // --- SALARY & SETTINGS OPERATIONS ---
-    fun insertOrUpdateSalary(effectiveDateMs: Long, amount: Float) {
-        val db = this.writableDatabase
-        val values = ContentValues().apply {
-            put(SAL_EFFECTIVE_DATE, effectiveDateMs)
-            put(SAL_AMOUNT, amount)
-        }
-        // INSERT OR REPLACE handles updating the salary if the exact date entry already exists
-        db.insertWithOnConflict(TABLE_SALARY, null, values, SQLiteDatabase.CONFLICT_REPLACE)
-    }
-
-    fun getSalaryHistory(): List<Pair<Long, Float>> {
-        val list = mutableListOf<Pair<Long, Float>>()
-        val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_SALARY ORDER BY $SAL_EFFECTIVE_DATE DESC", null)
-
-        if (cursor.moveToFirst()) {
-            do {
-                val date = cursor.getLong(cursor.getColumnIndexOrThrow(SAL_EFFECTIVE_DATE))
-                val amount = cursor.getFloat(cursor.getColumnIndexOrThrow(SAL_AMOUNT))
-                list.add(Pair(date, amount))
-            } while (cursor.moveToNext())
-        }
-        cursor.close()
-        return list
-    }
-
-    fun deleteSalaryRecord(effectiveDateMs: Long) {
-        val db = this.writableDatabase
-        db.delete(TABLE_SALARY, "$SAL_EFFECTIVE_DATE = ?", arrayOf(effectiveDateMs.toString()))
-    }
-
-    fun savePaymentDay(day: Int) {
-        val db = this.writableDatabase
-        val values = ContentValues().apply {
-            put(SET_KEY, "payment_day")
-            put(SET_VALUE, day)
-        }
-        db.insertWithOnConflict(TABLE_SETTINGS, null, values, SQLiteDatabase.CONFLICT_REPLACE)
-    }
-
-    fun getPaymentDay(): Int {
-        val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT $SET_VALUE FROM $TABLE_SETTINGS WHERE $SET_KEY = 'payment_day'", null)
-        var day = 7 // Default fallback to the 7th
-        if (cursor.moveToFirst()) {
-            day = cursor.getInt(0)
-        }
-        cursor.close()
-        return day
-    }
-
     //  --- Home & Record ---
     // Insert a shift log record
     fun insertRecord(record: WorkRecord): Long {
@@ -329,5 +277,36 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     fun deleteRecordById(recordId: Long) {
         val db = this.writableDatabase
         db.delete(TABLE_RECORD, "$REC_ID = ?", arrayOf(recordId.toString()))
+    }
+
+    // --- Statistic ---
+    fun getAllRecordsWithWorkplaceName(): List<Triple<WorkRecord, String, String>> {
+        val list = mutableListOf<Triple<WorkRecord, String, String>>()
+        val db = this.readableDatabase
+        val query = """
+        SELECT r.*, w.$WP_NAME, w.$WP_STATUS 
+        FROM $TABLE_RECORD r 
+        JOIN $TABLE_WORKPLACE w ON r.$REC_WP_ID = w.$REC_ID
+        ORDER BY r.$REC_DATE DESC
+    """.trimIndent()
+
+        val cursor = db.rawQuery(query, null)
+        if (cursor.moveToFirst()) {
+            do {
+                val record = WorkRecord(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow(REC_ID)),
+                    workplaceId = cursor.getLong(cursor.getColumnIndexOrThrow(REC_WP_ID)),
+                    date = cursor.getLong(cursor.getColumnIndexOrThrow(REC_DATE)),
+                    shiftType = cursor.getString(cursor.getColumnIndexOrThrow(REC_SHIFT_TYPE)),
+                    baseHours = cursor.getFloat(cursor.getColumnIndexOrThrow(REC_BASE_HOURS)),
+                    otHours = cursor.getFloat(cursor.getColumnIndexOrThrow(REC_OT_HOURS))
+                )
+                val wpName = cursor.getString(cursor.getColumnIndexOrThrow(WP_NAME))
+                val wpStatus = cursor.getString(cursor.getColumnIndexOrThrow(WP_STATUS))
+                list.add(Triple(record, wpName, wpStatus))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
     }
 }
