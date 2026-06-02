@@ -1,4 +1,4 @@
-package com.example.workhourcounter
+package com.example.workhourcounter.data
 
 data class Workplace(
     val id: Long = 0,

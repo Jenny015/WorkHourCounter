@@ -5,7 +5,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -13,12 +12,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.workhourcounter.screens.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.workhourcounter.viewModel.*
 
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
     val items = listOf(Screen.Workplace, Screen.Cards, Screen.Home, Screen.Dashboard, Screen.Settings)
     val workplaceViewModel: WorkplaceViewModel = viewModel()
+    val settingsViewModel: SettingsViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -61,11 +62,9 @@ fun MainScreen() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Home.route) { HomeScreen() }
-            composable(Screen.Workplace.route) {
-                WorkplaceScreen(viewModel = workplaceViewModel)
-            }
+            composable(Screen.Workplace.route) { WorkplaceScreen(viewModel = workplaceViewModel)}
             composable(Screen.Dashboard.route) { DashboardScreen() }
-            composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.Settings.route) { SettingsScreen(viewModel = settingsViewModel) }
             composable(Screen.Cards.route) { CardScreen() }
         }
     }
