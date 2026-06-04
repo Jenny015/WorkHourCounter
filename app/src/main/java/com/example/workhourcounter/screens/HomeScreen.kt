@@ -355,7 +355,6 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     isError = !isInputValid,
                                     textStyle = AppDesignSystem.getBodyStyle(),
-                                    // FIXED: Swapped weight(1f) with fillMaxWidth()
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }

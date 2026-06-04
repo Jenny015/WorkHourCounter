@@ -21,6 +21,8 @@
     <string name="wd_sat">六</string>
 
     <!--  Screen  -->
+    <string name="home_hour_error2">基本工时＋加班时数需在 0.1 至 24.0 的范围内</string>
+    <string name="home_hour_error1">基本工时需在 0.1 至 24.0 的范围内</string>
     <string name="screen_wp">地点</string>
     <string name="screen_cards">证件</string>
     <string name="screen_st">统计</string>
@@ -99,4 +101,6 @@
     <string name="home_next_month">下个月</string>
     <string name="home_setting">设置</string>
     <string name="home_fsize">字体大小</string>
+    <string name="err_name_empty">名称不可为空</string>
+    <string name="wp_name_duplicate">已存在相同名称的工作地点</string>
 </resources>

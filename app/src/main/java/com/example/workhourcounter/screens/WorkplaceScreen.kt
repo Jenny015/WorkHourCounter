@@ -48,8 +48,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.workhourcounter.Config
 import com.example.workhourcounter.R
 import com.example.workhourcounter.data.StatusOption
 import com.example.workhourcounter.data.Workplace
@@ -205,6 +207,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
     }
 
     if (isDialogOpen) {
+        var nameErrorResId by remember { mutableStateOf<Int?>(null) }
         Dialog(onDismissRequest = { isDialogOpen = false }) {
             Card(
                 modifier = Modifier
@@ -237,10 +240,24 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     // Name Input Fields Framework
                     OutlinedTextField(
                         value = workplaceName,
-                        onValueChange = { workplaceName = it },
+                        onValueChange = { input ->
+                            if (input.length <= Config.MAX_TEXT_INPUT) {
+                                workplaceName = input
+                                nameErrorResId = null
+                            }
+                        },
                         label = { Text(stringResource(id = R.string.wp_name), style = AppDesignSystem.getBodyStyle()) },
+                        isError = nameErrorResId != null,
                         textStyle = AppDesignSystem.getBodyStyle(),
                         modifier = Modifier.fillMaxWidth(),
+                        supportingText = {
+                            if (nameErrorResId != null) {
+                                Text(text = stringResource(nameErrorResId!!), color = MaterialTheme.colorScheme.error)
+                            } else {
+                                // Show a character counter so users know their limit
+                                Text(text = "${workplaceName.length} / ${Config.MAX_TEXT_INPUT}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
+                            }
+                        },
                         singleLine = true
                     )
 
@@ -270,20 +287,26 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     // Bottom Action
                     Button(
                         onClick = {
-                            if (workplaceName.isNotBlank()) {
-                                if (editingWorkplace == null) {
-                                    // Process add query insertion frameworks pipelines
-                                    viewModel.addWorkplace(workplaceName, selectedStatus.dbValue)
+                            val trimName = workplaceName.trim()
+                            if (trimName.isEmpty()) {
+                                nameErrorResId = R.string.err_name_empty
+                            } else {
+                                val isDuplicate = viewModel.isNameDuplicate(trimName, editingWorkplace?.id)
+                                if(isDuplicate){
+                                    nameErrorResId = R.string.wp_name_duplicate
                                 } else {
-                                    // Process modify tracking index pipelines updates parameters
-                                    viewModel.updateWorkplace(
-                                        editingWorkplace!!.id,
-                                        workplaceName,
-                                        selectedStatus.dbValue
-                                    )
+                                    if (editingWorkplace == null) {
+                                        // Process add query insertion frameworks pipelines
+                                        viewModel.addWorkplace(workplaceName, selectedStatus.dbValue)
+                                    } else {
+                                        // Process modify tracking index pipelines updates parameters
+                                        viewModel.updateWorkplace(editingWorkplace!!.id, workplaceName, selectedStatus.dbValue)
+                                    }
+                                    nameErrorResId = null
+                                    isDialogOpen = false
                                 }
-                                isDialogOpen = false
                             }
+
                         }
                     ) {
                         Text(text = if (editingWorkplace == null) stringResource(id = R.string.opt_add) else stringResource(id = R.string.opt_save))

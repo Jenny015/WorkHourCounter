@@ -39,7 +39,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.workhourcounter.Config
 import com.example.workhourcounter.R
 import com.example.workhourcounter.ui.theme.AppDesignSystem
 import com.example.workhourcounter.viewModel.CardModel
@@ -59,6 +62,7 @@ fun CardsScreen(viewModel: CardsViewModel) {
     var editingCard by remember { mutableStateOf<CardModel?>(null) }
 
     // Dialog state controllers
+    var nameErrorResId by remember(showDialog) { mutableStateOf<Int?>(null) }
     var nameInput by remember { mutableStateOf("") }
     var noInput by remember { mutableStateOf("") }
     var expirationCalendar by remember { mutableStateOf(Calendar.getInstance()) }
@@ -132,7 +136,7 @@ fun CardsScreen(viewModel: CardsViewModel) {
                                         Text(
                                             text = if (diff > 0) stringResource(id = R.string.cards_expired_soon) else stringResource(id = R.string.cards_expired),
                                             style = AppDesignSystem.getBodyStyle(),
-                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                            fontWeight = FontWeight.Bold
                                         )
                                     }
                                 }
@@ -157,16 +161,30 @@ fun CardsScreen(viewModel: CardsViewModel) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = nameInput,
-                        onValueChange = { nameInput = it },
+                        onValueChange = { input ->
+                            if (input.length <= Config.MAX_TEXT_INPUT) {
+                                nameInput = input
+                            }
+                        },
                         label = { Text(stringResource(id = R.string.cards_name), style = AppDesignSystem.getBodyStyle()) },
                         textStyle = AppDesignSystem.getBodyStyle(),
-                        modifier = Modifier.fillMaxWidth())
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = {
+                            Text(text = "${nameInput.length} / ${Config.MAX_TEXT_INPUT}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
+                        })
                     OutlinedTextField(
                         value = noInput,
-                        onValueChange = { noInput = it },
+                        onValueChange = { input ->
+                            if (noInput.length <= Config.MAX_TEXT_INPUT) {
+                                noInput = input
+                            }
+                        },
                         label = { Text(stringResource(id = R.string.cards_no), style = AppDesignSystem.getBodyStyle()) },
                         textStyle = AppDesignSystem.getBodyStyle(),
-                        modifier = Modifier.fillMaxWidth())
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = {
+                            Text(text = "${noInput.length} / ${Config.MAX_TEXT_INPUT}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
+                        })
 
                     OutlinedButton(onClick = { openDatePicker.show() }, modifier = Modifier.fillMaxWidth()) {
                         Text("${stringResource(id = R.string.cards_expired_date)}: ${dateFormat.format(expirationCalendar.time)}", style = AppDesignSystem.getBodyStyle())
@@ -174,17 +192,17 @@ fun CardsScreen(viewModel: CardsViewModel) {
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    if (nameInput.isNotBlank() && noInput.isNotBlank()) {
-                        val activeItem = editingCard
-                        if (activeItem == null) {
+                Button(
+                    enabled = nameInput.isNotBlank(),
+                    onClick = {
+                        if (editingCard == null) {
                             viewModel.addCard(nameInput, noInput, expirationCalendar.timeInMillis)
                         } else {
-                            viewModel.updateCard(activeItem.id, nameInput, noInput, expirationCalendar.timeInMillis)
+                            viewModel.updateCard(editingCard!!.id, nameInput, noInput, expirationCalendar.timeInMillis)
                         }
                         showDialog = false
                     }
-                }) { Text(if (editingCard == null) stringResource(id = R.string.opt_add) else stringResource(id = R.string.opt_save), style = AppDesignSystem.getBodyStyle()) }
+                ) { Text(if (editingCard == null) stringResource(id = R.string.opt_add) else stringResource(id = R.string.opt_save), style = AppDesignSystem.getBodyStyle()) }
             },
             dismissButton = {
                 Row {

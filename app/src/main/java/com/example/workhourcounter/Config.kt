@@ -10,9 +10,9 @@ class Config(){
             val floatValue2 = input2.toFloatOrNull()
             return floatValue != null && floatValue2 != null && floatValue+floatValue2 in 0.1f..24.0f
         }
-
         var fontSize: Int = 1
         var baseWorkHour: Float = 8.0f
+        var MAX_TEXT_INPUT: Int = 20
     }
 
 }

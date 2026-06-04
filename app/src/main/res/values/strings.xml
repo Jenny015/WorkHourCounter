@@ -20,6 +20,14 @@
     <string name="wd_fri">Fri</string>
     <string name="wd_sat">Sat</string>
 
+    <!-- Error   -->
+    <string name="err_name_empty">Name cannot be empty</string>
+
+    <string name="wp_name_duplicate">A workplace with this name already exists.</string>
+
+    <string name="home_hour_error2">Base hour + OT hour should within 0.1 ~ 24.0</string>
+    <string name="home_hour_error1">Input should within 0.1 ~ 24.0</string>
+
     <!--  Screen  -->
     <string name="screen_wp">Location</string>
     <string name="screen_cards">Cards</string>
@@ -64,8 +72,6 @@
     <string name="home_t_half">Half day</string>
     <string name="home_t_custom">Customise</string>
     <string name="home_basic_hour">Base Hour</string>
-    <string name="home_hour_error2">Base hour + OT hour should within 0.1 ~ 24.0</string>
-    <string name="home_hour_error1">Input should within 0.1 ~ 24.0</string>
 
     <!--  Statistics Screen  -->
     <string name="st_title">Statistics</string>

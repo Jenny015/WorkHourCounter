@@ -14,8 +14,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-// TODO: input validation
-//       - text: null -> error, name cannot be same?, length limitation
+// TODO: fontSize & baseWorkHour -> shared preference
 // TODO: Buttons content horizontal central alignment
 
 // --- Advanced ---
