@@ -1,18 +1,30 @@
 package com.example.workhourcounter
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.workhourcounter.screens.*
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.workhourcounter.viewModel.*
+import com.example.workhourcounter.screens.CardsScreen
+import com.example.workhourcounter.screens.HomeScreen
+import com.example.workhourcounter.screens.StatisticsScreen
+import com.example.workhourcounter.screens.WorkplaceScreen
+import com.example.workhourcounter.viewModel.CardsViewModel
+import com.example.workhourcounter.viewModel.HomeViewModel
+import com.example.workhourcounter.viewModel.StatisticsViewModel
+import com.example.workhourcounter.viewModel.WorkplaceViewModel
 
 @Composable
 fun MainScreen() {
@@ -32,8 +44,8 @@ fun MainScreen() {
 
                 items.forEach { screen ->
                     NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.title) },
-                        label = {Text(text = screen.title, style = MaterialTheme.typography.titleLarge)},
+                        icon = { Icon(screen.icon, contentDescription = stringResource(screen.title)) },
+                        label = {Text(text = stringResource(screen.title), style = MaterialTheme.typography.titleLarge)},
 
                         selected = currentRoute == screen.route,
                         onClick = {

@@ -1,3 +1,93 @@
 <resources>
-    <string name="app_name">WorkHourCounter</string>
+    <!--  General  -->
+    <string name="app_name">Work Hour Counter</string>
+
+    <string name="opt_add">Add</string>
+    <string name="opt_save">Save</string>
+    <string name="opt_del">Delete</string>
+    <string name="opt_cancel">Cancel</string>
+    <string name="opt_yes">Sure</string>
+
+    <string name="unit_day">day(s)</string>
+    <string name="unit_hour">hr(s)</string>
+
+    <string name="wd_sun">Sun</string>
+    <string name="wd_mon">Mon</string>
+    <string name="wd_tue">Tue</string>
+    <string name="wd_wed">Wed</string>
+    <string name="wd_thu">Thu</string>
+    <string name="wd_fri">Fri</string>
+    <string name="wd_sat">Sat</string>
+
+    <!--  Screen  -->
+    <string name="screen_wp">Location</string>
+    <string name="screen_cards">Cards</string>
+    <string name="screen_st">Stats</string>
+
+    <!--  Cards Screen  -->
+    <string name="cards_title">Cards Management</string>
+    <string name="cards_no_card">No cards stored yet. Please press the "+" to create one.</string>
+    <string name="cards_expired_soon">⚠️ EXPIRING SOON</string>
+    <string name="cards_expired">⚠️ EXPIRED</string>
+
+    <string name="cards_add_card">Add New Card</string>
+    <string name="cards_edit_card">Edit Card</string>
+
+    <string name="cards_name">Name</string>
+    <string name="cards_no">No.</string>
+    <string name="cards_expired_date">Expires</string>
+
+    <string name="cards_del_title">Card Deletion Confirm</string>
+    <string name="cards_del_body">Are you sure you want to delete \" %1$s \" ?</string>
+    <string name="cards_del_no_name">this card</string>
+    <!--  Home Screen  -->
+    <string name="home_title">Home</string>
+    <string name="home_month_day">Working Day</string>
+    <string name="home_ot">OT Hours</string>
+
+    <string name="home_add_record">Add Working Record</string>
+    <string name="home_edit_record">Edit Working Record</string>
+    <string name="home_no_workplace">No workplace. Please add a workplace in "Workplace" tab first.</string>
+
+    <string name="home_wp">Workplace</string>
+    <string name="home_wp_select">Please select a workplace</string>
+    <string name="home_t_full">Full day</string>
+    <string name="home_t_half">Half day</string>
+    <string name="home_t_custom">Customise</string>
+    <string name="home_basic_hour">Base Hour</string>
+
+    <!--  Statistics Screen  -->
+    <string name="st_title">Statistics</string>
+    <string name="st_total_day">Total Work Day</string>
+    <string name="st_total_hr">Total Work Hour</string>
+    <string name="st_per_wp">Working Hour Per Workplace</string>
+    <string name="st_no_record">You don\'t have any working record yet.</string>
+    <string name="st_per_month">Working Hour Per Month</string>
+
+    <!--  Workplace Screen  -->
+    <string name="wp_title">Workplace Management</string>
+
+    <string name="wp_s_working">Working</string>
+    <string name="wp_s_pending">Pending</string>
+    <string name="wp_s_finished">Finished</string>
+
+    <string name="wp_edit_tips">🔧 Tap a workplace to edit</string>
+    <string name="wp_del_tips">⚠️ Tap a workplace to delete</string>
+    <string name="wp_check_tips">Tap any workplace to review working record.</string>
+    <string name="wp_no_wp">No workplaces added yet.</string>
+    <string name="wp_add">Add New Workplace</string>
+    <string name="wp_edit">Edit Workplace</string>
+    
+    <string name="wp_name">Name</string>
+    <string name="wp_status">Status</string>
+    <string name="wp_record_title">Shift Record</string>
+
+    <string name="wp_no_record">No records for this workplace.</string>
+    <string name="wp_del_title">Delete Workplace</string>
+    <string name="wp_del_body">This action will remove all the working log record for \" %1$s \", are you sure to continue?</string>
+    <string name="wp_del_input">Type \"delete\" to verify operation:</string>
+
+    <!--  CardExpiryWorker  -->
+    <string name="cew_card_name">Your Card</string>
+    <string name="cew_msg">%1$s (%2$s) will expire in 1 month.</string>
 </resources>

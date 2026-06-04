@@ -1,33 +1,51 @@
 package com.example.workhourcounter.screens
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.workhourcounter.R
 import com.example.workhourcounter.viewModel.CardModel
 import com.example.workhourcounter.viewModel.CardsViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import android.app.DatePickerDialog
 
 @Composable
 fun CardsScreen(viewModel: CardsViewModel) {
@@ -67,12 +85,12 @@ fun CardsScreen(viewModel: CardsViewModel) {
         }
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
-            Text(text = "我的工作證件", style = MaterialTheme.typography.headlineMedium)
+            Text(text = stringResource(id = R.string.cards_title), style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(16.dp))
 
             if (viewModel.cardsList.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text("未有任何工作證件，按右下角「＋」新增。", color = Color.Gray, style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(id = R.string.cards_no_card), color = Color.Gray, style = MaterialTheme.typography.titleMedium)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
@@ -107,18 +125,17 @@ fun CardsScreen(viewModel: CardsViewModel) {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(text = card.name, style = MaterialTheme.typography.titleLarge)
-                                    // Optional visual badge indicator
                                     if (diff <= oneMonthMs) {
                                         Text(
-                                            text = if (diff > 0) "⚠️ 即將過期" else "⚠️ 已經過期",
+                                            text = if (diff > 0) stringResource(id = R.string.cards_expired_soon) else stringResource(id = R.string.cards_expired),
                                             style = MaterialTheme.typography.labelLarge,
                                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                                         )
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = "編號: ${card.no}", style = MaterialTheme.typography.bodyLarge, color = Color.DarkGray)
-                                Text(text = "過期日: ${dateFormat.format(Date(card.expireDate))}", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
+                                Text(text = "${stringResource(id = R.string.cards_no)}: ${card.no}", style = MaterialTheme.typography.bodyLarge, color = Color.DarkGray)
+                                Text(text = "${stringResource(id = R.string.cards_expired_date)}: ${dateFormat.format(Date(card.expireDate))}", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
                             }
                         }
                     }
@@ -131,14 +148,14 @@ fun CardsScreen(viewModel: CardsViewModel) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text(if (editingCard == null) "新增工作證件" else "修改工作證件") },
+            title = { Text(if (editingCard == null) stringResource(id = R.string.cards_add_card) else stringResource(id = R.string.cards_edit_card)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(value = nameInput, onValueChange = { nameInput = it }, label = { Text("證件名稱", style = MaterialTheme.typography.bodyLarge) }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = noInput, onValueChange = { noInput = it }, label = { Text("證件編號", style = MaterialTheme.typography.bodyLarge) }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = nameInput, onValueChange = { nameInput = it }, label = { Text(stringResource(id = R.string.cards_name), style = MaterialTheme.typography.bodyLarge) }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = noInput, onValueChange = { noInput = it }, label = { Text(stringResource(id = R.string.cards_no), style = MaterialTheme.typography.bodyLarge) }, modifier = Modifier.fillMaxWidth())
 
                     OutlinedButton(onClick = { openDatePicker.show() }, modifier = Modifier.fillMaxWidth()) {
-                        Text("過期日: ${dateFormat.format(expirationCalendar.time)}", style = MaterialTheme.typography.bodyLarge)
+                        Text("${stringResource(id = R.string.cards_expired_date)}: ${dateFormat.format(expirationCalendar.time)}", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             },
@@ -153,7 +170,7 @@ fun CardsScreen(viewModel: CardsViewModel) {
                         }
                         showDialog = false
                     }
-                }) { Text("保存", style = MaterialTheme.typography.bodyLarge) }
+                }) { Text(if (editingCard == null) stringResource(id = R.string.opt_add) else stringResource(id = R.string.opt_save), style = MaterialTheme.typography.bodyLarge) }
             },
             dismissButton = {
                 Row {
@@ -161,9 +178,9 @@ fun CardsScreen(viewModel: CardsViewModel) {
                         TextButton(
                             colors = ButtonDefaults.textButtonColors(contentColor = Color.Red),
                             onClick = { showDeleteConfirm = true }
-                        ) { Text("刪除") }
+                        ) { Text(stringResource(id = R.string.opt_del), style = MaterialTheme.typography.bodyLarge) }
                     }
-                    TextButton(onClick = { showDialog = false }) { Text("取消", style = MaterialTheme.typography.bodyLarge) }
+                    TextButton(onClick = { showDialog = false }) { Text(stringResource(id = R.string.opt_cancel), style = MaterialTheme.typography.bodyLarge) }
                 }
             }
         )
@@ -173,8 +190,8 @@ fun CardsScreen(viewModel: CardsViewModel) {
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("刪除證件") },
-            text = { Text("請問你確定要刪除這項資料嗎?", style = MaterialTheme.typography.bodyLarge) },
+            title = { Text(stringResource(id = R.string.cards_del_title)) },
+            text = { Text(stringResource(id = R.string.cards_del_body, editingCard?.name ?: stringResource(id = R.string.cards_del_no_name)), style = MaterialTheme.typography.bodyLarge) },
             confirmButton = {
                 Button(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
@@ -183,9 +200,9 @@ fun CardsScreen(viewModel: CardsViewModel) {
                         showDeleteConfirm = false
                         showDialog = false
                     }
-                ) { Text("碓定", style = MaterialTheme.typography.bodyLarge) }
+                ) { Text(stringResource(id = R.string.opt_yes), style = MaterialTheme.typography.bodyLarge) }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("取消", style = MaterialTheme.typography.bodyLarge) } }
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(id = R.string.opt_cancel), style = MaterialTheme.typography.bodyLarge) } }
         )
     }
 }
