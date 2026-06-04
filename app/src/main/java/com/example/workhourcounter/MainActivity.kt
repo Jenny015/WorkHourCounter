@@ -14,7 +14,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
+// TODO: input validation
+//       - text: null -> error, name cannot be same?, length limitation
 // TODO: Buttons content horizontal central alignment
-// TODO: Modify basic working hours
+
+// --- Advanced ---
+// TODO: base hour for each workplace
+// TODO: Location for each workplace -> click to open Google map
 // TODO: Cards stores Images

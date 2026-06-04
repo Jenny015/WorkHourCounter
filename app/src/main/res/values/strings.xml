@@ -43,6 +43,11 @@
     <string name="cards_del_no_name">this card</string>
     <!--  Home Screen  -->
     <string name="home_title">Home</string>
+
+    <string name="home_setting">Setting</string>
+    <string name="home_fsize">Font size</string>
+    <string name="home_base_hr">Base Working Hour</string>
+
     <string name="home_next_month">Next month</string>
     <string name="home_prev_month">Previous month</string>
 
@@ -59,6 +64,8 @@
     <string name="home_t_half">Half day</string>
     <string name="home_t_custom">Customise</string>
     <string name="home_basic_hour">Base Hour</string>
+    <string name="home_hour_error2">Base hour + OT hour should within 0.1 ~ 24.0</string>
+    <string name="home_hour_error1">Input should within 0.1 ~ 24.0</string>
 
     <!--  Statistics Screen  -->
     <string name="st_title">Statistics</string>
