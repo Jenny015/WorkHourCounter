@@ -4,27 +4,29 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import java.util.Calendar
 import androidx.core.database.sqlite.transaction
 import com.example.workhourcounter.viewModel.CardModel
+import java.util.Calendar
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
         private const val DATABASE_NAME = "workhourcounter.db"
         private const val DATABASE_VERSION = 2
-
-        // Table Names
+        // Workplace
         const val TABLE_WORKPLACE = "workplace"
-        const val TABLE_RECORD = "work_record"
-
-        // Workplace Columns
         const val WP_ID = "id"
         const val WP_NAME = "name"
         const val WP_START_DATE = "start_date"
         const val WP_STATUS = "status"
 
-        // Record Columns
+        val WORKING = StatusOption.WORKING.dbValue
+        val PENDING = StatusOption.WORKING.dbValue
+        val FINISHED = StatusOption.FINISHED.dbValue
+
+
+        // Record
+        const val TABLE_RECORD = "work_record"
         const val REC_ID = "id"
         const val REC_WP_ID = "workplace_id"
         const val REC_DATE = "date"
@@ -109,9 +111,9 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         SELECT * FROM $TABLE_WORKPLACE
         ORDER BY 
             CASE $WP_STATUS
-                WHEN '主力' THEN 1
-                WHEN '少去' THEN 2
-                WHEN '完工' THEN 3
+                WHEN '$WORKING' THEN 1
+                WHEN '$PENDING' THEN 2
+                WHEN '$FINISHED' THEN 3
                 ELSE 4
             End ASC,
             $WP_START_DATE DESC
@@ -341,5 +343,37 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return list
+    }
+
+    fun isNameDuplicate(name: String, type: String, excludeId: Long? = null): Boolean {
+        val db = this.readableDatabase
+        val trimName = name.trim()
+        val input = when(type.trim().lowercase()){
+            "wp" -> listOf(TABLE_WORKPLACE, WP_NAME, WP_ID)
+            "card" -> listOf(TABLE_CARD, CARD_NAME, CARD_ID)
+            else -> {
+                return true
+            }
+        }
+
+        val query = if (excludeId != null) {
+            "SELECT COUNT(*) FROM ${input[0]} WHERE UPPER(${input[1]}) = UPPER(?) AND ${input[2]} != ?"
+        } else {
+            "SELECT COUNT(*) FROM ${input[0]} WHERE UPPER(${input[1]}) = UPPER(?)"
+        }
+
+        val args = if (excludeId != null) {
+            arrayOf(trimName, excludeId.toString())
+        } else {
+            arrayOf(trimName)
+        }
+
+        val cursor = db.rawQuery(query, args)
+        var isDuplicate = false
+        if (cursor.moveToFirst()) {
+            isDuplicate = cursor.getInt(0) > 0
+        }
+        cursor.close()
+        return isDuplicate
     }
 }

@@ -8,7 +8,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.workhourcounter.CardExpiryWorker
 import com.example.workhourcounter.data.DatabaseHelper
-import java.util.*
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 data class CardModel(
@@ -71,5 +71,9 @@ class CardsViewModel(application: Application) : AndroidViewModel(application) {
 
             WorkManager.getInstance(getApplication()).enqueue(workRequest)
         }
+    }
+
+    fun isNameDuplicate(name: String, excludeId: Long? = null): Boolean {
+        return dbHelper.isNameDuplicate(name, "card", excludeId)
     }
 }

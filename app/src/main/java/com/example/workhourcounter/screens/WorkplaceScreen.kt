@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,11 +48,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.workhourcounter.Config
 import com.example.workhourcounter.R
 import com.example.workhourcounter.data.StatusOption
 import com.example.workhourcounter.data.Workplace
+import com.example.workhourcounter.ui.theme.AppDesignSystem
 import com.example.workhourcounter.viewModel.WorkplaceViewModel
 import java.util.Date
 import java.util.Locale
@@ -76,7 +80,8 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
     var editingWorkplace by remember { mutableStateOf<Workplace?>(null) }
 
     Scaffold(
-        // --- REQUIREMENT 1: FLOATING ACTION BUTTON ---
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        // --- FLOATING ACTION BUTTON ---
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -88,7 +93,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Workplace")
+                Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.wp_add))
             }
         }
     ) { innerPadding ->
@@ -101,7 +106,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(id = R.string.wp_title), style = MaterialTheme.typography.headlineMedium)
+                Text(stringResource(id = R.string.wp_title), style = AppDesignSystem.getTitleStyle())
                 Row {
                     // Edit Phase Toggle
                     IconButton(
@@ -113,7 +118,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                             containerColor = if (currentMode == ExecutionMode.PENDING_EDIT) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                         )
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = "開啟編輯模式")
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.wp_edit_mode))
                     }
 
                     // Delete Phase Toggle
@@ -126,7 +131,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                             containerColor = if (currentMode == ExecutionMode.PENDING_DELETE) MaterialTheme.colorScheme.errorContainer else Color.Transparent
                         )
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = "開啟刪除模式")
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.wp_del_mode))
                     }
                 }
             }
@@ -140,14 +145,14 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                 ) {
                     Text(
                         text = if (currentMode == ExecutionMode.PENDING_EDIT) stringResource(id = R.string.wp_edit_tips) else stringResource(id = R.string.wp_del_tips),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = AppDesignSystem.getBodyStyle(),
                         modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally)
                     )
                 }
             }
             Text(
                 text = stringResource(id = R.string.wp_check_tips),
-                style = MaterialTheme.typography.bodyLarge
+                style = AppDesignSystem.getBodyStyle()
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -160,7 +165,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     Text(
                         stringResource(id = R.string.wp_no_wp),
                         color = Color.Gray,
-                        style = MaterialTheme.typography.titleLarge
+                        style = AppDesignSystem.getSectionHeaderStyle()
                     )
                 }
             } else {
@@ -202,6 +207,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
     }
 
     if (isDialogOpen) {
+        var nameErrorResId by remember { mutableStateOf<Int?>(null) }
         Dialog(onDismissRequest = { isDialogOpen = false }) {
             Card(
                 modifier = Modifier
@@ -222,10 +228,10 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     ) {
                         Text(
                             text = if (editingWorkplace == null) stringResource(id = R.string.wp_add) else stringResource(id = R.string.wp_edit),
-                            style = MaterialTheme.typography.titleLarge
+                            style = AppDesignSystem.getSectionHeaderStyle()
                         )
                         IconButton(onClick = { isDialogOpen = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "關閉")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(id = R.string.opt_close))
                         }
                     }
 
@@ -234,9 +240,24 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     // Name Input Fields Framework
                     OutlinedTextField(
                         value = workplaceName,
-                        onValueChange = { workplaceName = it },
-                        label = { Text(stringResource(id = R.string.wp_name), style = MaterialTheme.typography.bodyLarge) },
+                        onValueChange = { input ->
+                            if (input.length <= Config.MAX_TEXT_INPUT) {
+                                workplaceName = input
+                                nameErrorResId = null
+                            }
+                        },
+                        label = { Text(stringResource(id = R.string.wp_name), style = AppDesignSystem.getBodyStyle()) },
+                        isError = nameErrorResId != null,
+                        textStyle = AppDesignSystem.getBodyStyle(),
                         modifier = Modifier.fillMaxWidth(),
+                        supportingText = {
+                            if (nameErrorResId != null) {
+                                Text(text = stringResource(nameErrorResId!!), color = MaterialTheme.colorScheme.error)
+                            } else {
+                                // Show a character counter so users know their limit
+                                Text(text = "${workplaceName.length} / ${Config.MAX_TEXT_INPUT}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
+                            }
+                        },
                         singleLine = true
                     )
 
@@ -245,7 +266,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                             onClick = { statusDropdownExpanded = true },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("${stringResource(id = R.string.wp_status)}: ${stringResource(id = selectedStatus.labelResId)}", style = MaterialTheme.typography.bodyLarge)
+                            Text("${stringResource(id = R.string.wp_status)}: ${stringResource(id = selectedStatus.labelResId)}", style = AppDesignSystem.getBodyStyle())
                         }
                         DropdownMenu(
                             expanded = statusDropdownExpanded,
@@ -253,7 +274,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         ) {
                             StatusOption.entries.forEach { status ->
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(id = status.labelResId), style = MaterialTheme.typography.bodyLarge) },
+                                    text = { Text(stringResource(id = status.labelResId), style = AppDesignSystem.getBodyStyle()) },
                                     onClick = {
                                         selectedStatus = status
                                         statusDropdownExpanded = false
@@ -266,20 +287,26 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     // Bottom Action
                     Button(
                         onClick = {
-                            if (workplaceName.isNotBlank()) {
-                                if (editingWorkplace == null) {
-                                    // Process add query insertion frameworks pipelines
-                                    viewModel.addWorkplace(workplaceName, selectedStatus.dbValue)
+                            val trimName = workplaceName.trim()
+                            if (trimName.isEmpty()) {
+                                nameErrorResId = R.string.err_name_empty
+                            } else {
+                                val isDuplicate = viewModel.isNameDuplicate(trimName, editingWorkplace?.id)
+                                if(isDuplicate){
+                                    nameErrorResId = R.string.wp_name_duplicate
                                 } else {
-                                    // Process modify tracking index pipelines updates parameters
-                                    viewModel.updateWorkplace(
-                                        editingWorkplace!!.id,
-                                        workplaceName,
-                                        selectedStatus.dbValue
-                                    )
+                                    if (editingWorkplace == null) {
+                                        // Process add query insertion frameworks pipelines
+                                        viewModel.addWorkplace(workplaceName, selectedStatus.dbValue)
+                                    } else {
+                                        // Process modify tracking index pipelines updates parameters
+                                        viewModel.updateWorkplace(editingWorkplace!!.id, workplaceName, selectedStatus.dbValue)
+                                    }
+                                    nameErrorResId = null
+                                    isDialogOpen = false
                                 }
-                                isDialogOpen = false
                             }
+
                         }
                     ) {
                         Text(text = if (editingWorkplace == null) stringResource(id = R.string.opt_add) else stringResource(id = R.string.opt_save))
@@ -307,11 +334,11 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text(text = workplace.name, style = MaterialTheme.typography.titleLarge)
-                                Text(text = stringResource(id = R.string.wp_record_title), style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
+                                Text(text = workplace.name, style = AppDesignSystem.getSectionHeaderStyle())
+                                Text(text = stringResource(id = R.string.wp_record_title), style = AppDesignSystem.getBodyStyle(), color = Color.Gray)
                             }
                             IconButton(onClick = { workplaceForHistory = null }) {
-                                Icon(Icons.Default.Close, contentDescription = "關閉")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(id = R.string.opt_close))
                             }
                         }
 
@@ -325,7 +352,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
 
                         if (records.isEmpty()) {
                             Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                                Text(stringResource(id = R.string.wp_no_record), color = Color.Gray, style = MaterialTheme.typography.titleLarge)
+                                Text(stringResource(id = R.string.wp_no_record), color = Color.Gray, style = AppDesignSystem.getSectionHeaderStyle())
                             }
                         } else {
                             LazyColumn(
@@ -341,12 +368,12 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                                         // Left side: Date string formatted neatly
                                         Text(
                                             text = dateFormat.format(Date(log.date)),
-                                            style = MaterialTheme.typography.titleLarge
+                                            style = AppDesignSystem.getBodyStyle()
                                         )
                                         // Right side: Calculated cumulative work hours
                                         Text(
                                             text = "${log.baseHours + log.otHours} ${stringResource(id = R.string.unit_hour)}",
-                                            style = MaterialTheme.typography.titleLarge,
+                                            style = AppDesignSystem.getBodyStyle(),
                                             color = MaterialTheme.colorScheme.secondary
                                         )
                                     }
@@ -372,13 +399,14 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         Text(
                             text = stringResource(id = R.string.wp_del_body ,wp.name),
                             color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = AppDesignSystem.getBodyStyle()
                         )
-                        Text(text = stringResource(id = R.string.wp_del_input), style = MaterialTheme.typography.bodyLarge)
+                        Text(text = stringResource(id = R.string.wp_del_input), style = AppDesignSystem.getBodyStyle())
                         OutlinedTextField(
                             value = deleteConfirmationInput,
                             onValueChange = { deleteConfirmationInput = it },
-                            placeholder = { Text(stringResource(id = R.string.opt_del).lowercase(), style = MaterialTheme.typography.bodyLarge) },
+                            placeholder = { Text(stringResource(id = R.string.opt_del).lowercase(), style = AppDesignSystem.getBodyStyle()) },
+                            textStyle = AppDesignSystem.getBodyStyle(),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -387,7 +415,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                 confirmButton = {
                     Button(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        enabled = deleteConfirmationInput.trim().lowercase() == stringResource(id = R.string.opt_del),
+                        enabled = deleteConfirmationInput.trim().equals(stringResource(id = R.string.opt_del), ignoreCase = true),
                         onClick = {
                             viewModel.deleteWorkplace(wp.id)
                             // If we were editing this specific workplace, clear out the form
@@ -398,10 +426,10 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                             }
                             workplaceToDelete = null
                         }
-                    ) {Text(stringResource(id = R.string.opt_del), style = MaterialTheme.typography.bodyLarge)}
+                    ) {Text(stringResource(id = R.string.opt_del), style = AppDesignSystem.getBodyStyle())}
                 },
                 dismissButton = {
-                    TextButton(onClick = { workplaceToDelete = null }) {Text(stringResource(id = R.string.opt_cancel), style = MaterialTheme.typography.bodyLarge)}
+                    TextButton(onClick = { workplaceToDelete = null }) {Text(stringResource(id = R.string.opt_cancel), style = AppDesignSystem.getBodyStyle())}
                 }
             )
         }
@@ -420,11 +448,11 @@ fun WorkplaceItemRow(workplace: Workplace, onCardClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ){
             Column{
-                Text(text = workplace.name, style = MaterialTheme.typography.titleLarge)
+                Text(text = workplace.name, style = AppDesignSystem.getSectionHeaderStyle())
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${stringResource(id = R.string.wp_status)}: ${workplace.status}",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "${stringResource(id = R.string.wp_status)}: ${stringResource(id = StatusOption.fromDbValue(workplace.status).labelResId)}",
+                    style = AppDesignSystem.getBodyStyle(),
                     color = when (StatusOption.fromDbValue(workplace.status)) {
                         StatusOption.WORKING -> Color(0xFF035707)
                         StatusOption.PENDING -> Color(0xFF021da6)
@@ -435,7 +463,7 @@ fun WorkplaceItemRow(workplace: Workplace, onCardClick: () -> Unit) {
             Column( horizontalAlignment = Alignment.End ) {
                 Text(
                     text = "${workplace.totalDays} ${stringResource(id = R.string.unit_day)}",
-                    style = MaterialTheme.typography.headlineMedium, // Bold prominent number
+                    style = AppDesignSystem.getSectionHeaderStyle(), // Bold prominent number
                     color = MaterialTheme.colorScheme.primary
                 )
             }

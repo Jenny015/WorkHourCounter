@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,8 +39,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.workhourcounter.Config
 import com.example.workhourcounter.R
+import com.example.workhourcounter.ui.theme.AppDesignSystem
 import com.example.workhourcounter.viewModel.CardModel
 import com.example.workhourcounter.viewModel.CardsViewModel
 import java.text.SimpleDateFormat
@@ -57,6 +62,7 @@ fun CardsScreen(viewModel: CardsViewModel) {
     var editingCard by remember { mutableStateOf<CardModel?>(null) }
 
     // Dialog state controllers
+    var nameErrorResId by remember(showDialog) { mutableStateOf<Int?>(null) }
     var nameInput by remember { mutableStateOf("") }
     var noInput by remember { mutableStateOf("") }
     var expirationCalendar by remember { mutableStateOf(Calendar.getInstance()) }
@@ -71,6 +77,7 @@ fun CardsScreen(viewModel: CardsViewModel) {
     )
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -81,16 +88,16 @@ fun CardsScreen(viewModel: CardsViewModel) {
                     showDialog = true
                 },
                 containerColor = MaterialTheme.colorScheme.primary
-            ) { Icon(Icons.Default.Add, contentDescription = "Add New Card") }
+            ) { Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.cards_add_card)) }
         }
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
-            Text(text = stringResource(id = R.string.cards_title), style = MaterialTheme.typography.headlineMedium)
+            Text(text = stringResource(id = R.string.cards_title), style = AppDesignSystem.getTitleStyle())
             Spacer(modifier = Modifier.height(16.dp))
 
             if (viewModel.cardsList.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(id = R.string.cards_no_card), color = Color.Gray, style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(id = R.string.cards_no_card), color = Color.Gray, style = AppDesignSystem.getSectionHeaderStyle())
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
@@ -104,9 +111,9 @@ fun CardsScreen(viewModel: CardsViewModel) {
                         val cardBackgroundColor = if (diff in 0..oneMonthMs) {
                             Color(0xFFFFF9C4)
                         } else if(diff < 0){
-                            Color(0xFFFFC4C4)
+                            Color(0xFFFFDEDE)
                         } else {
-                            MaterialTheme.colorScheme.surfaceVariant
+                            MaterialTheme.colorScheme.surface
                         }
                         Card(
                             modifier = Modifier.fillMaxWidth().clickable {
@@ -124,18 +131,19 @@ fun CardsScreen(viewModel: CardsViewModel) {
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(text = card.name, style = MaterialTheme.typography.titleLarge)
+                                    Text(text = card.name, style = AppDesignSystem.getSectionHeaderStyle())
                                     if (diff <= oneMonthMs) {
                                         Text(
                                             text = if (diff > 0) stringResource(id = R.string.cards_expired_soon) else stringResource(id = R.string.cards_expired),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                            style = AppDesignSystem.getBodyStyle(),
+                                            fontWeight = FontWeight.Bold
                                         )
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = "${stringResource(id = R.string.cards_no)}: ${card.no}", style = MaterialTheme.typography.bodyLarge, color = Color.DarkGray)
-                                Text(text = "${stringResource(id = R.string.cards_expired_date)}: ${dateFormat.format(Date(card.expireDate))}", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
+                                Text(text = "${stringResource(id = R.string.cards_no)}: ${card.no}", style = AppDesignSystem.getBodyStyle(), color = Color.DarkGray)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(text = "${stringResource(id = R.string.cards_expired_date)}: ${dateFormat.format(Date(card.expireDate))}", style = AppDesignSystem.getBodyStyle())
                             }
                         }
                     }
@@ -151,26 +159,50 @@ fun CardsScreen(viewModel: CardsViewModel) {
             title = { Text(if (editingCard == null) stringResource(id = R.string.cards_add_card) else stringResource(id = R.string.cards_edit_card)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(value = nameInput, onValueChange = { nameInput = it }, label = { Text(stringResource(id = R.string.cards_name), style = MaterialTheme.typography.bodyLarge) }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = noInput, onValueChange = { noInput = it }, label = { Text(stringResource(id = R.string.cards_no), style = MaterialTheme.typography.bodyLarge) }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { input ->
+                            if (input.length <= Config.MAX_TEXT_INPUT) {
+                                nameInput = input
+                            }
+                        },
+                        label = { Text(stringResource(id = R.string.cards_name), style = AppDesignSystem.getBodyStyle()) },
+                        textStyle = AppDesignSystem.getBodyStyle(),
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = {
+                            Text(text = "${nameInput.length} / ${Config.MAX_TEXT_INPUT}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
+                        })
+                    OutlinedTextField(
+                        value = noInput,
+                        onValueChange = { input ->
+                            if (noInput.length <= Config.MAX_TEXT_INPUT) {
+                                noInput = input
+                            }
+                        },
+                        label = { Text(stringResource(id = R.string.cards_no), style = AppDesignSystem.getBodyStyle()) },
+                        textStyle = AppDesignSystem.getBodyStyle(),
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = {
+                            Text(text = "${noInput.length} / ${Config.MAX_TEXT_INPUT}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
+                        })
 
                     OutlinedButton(onClick = { openDatePicker.show() }, modifier = Modifier.fillMaxWidth()) {
-                        Text("${stringResource(id = R.string.cards_expired_date)}: ${dateFormat.format(expirationCalendar.time)}", style = MaterialTheme.typography.bodyLarge)
+                        Text("${stringResource(id = R.string.cards_expired_date)}: ${dateFormat.format(expirationCalendar.time)}", style = AppDesignSystem.getBodyStyle())
                     }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    if (nameInput.isNotBlank() && noInput.isNotBlank()) {
-                        val activeItem = editingCard
-                        if (activeItem == null) {
+                Button(
+                    enabled = nameInput.isNotBlank(),
+                    onClick = {
+                        if (editingCard == null) {
                             viewModel.addCard(nameInput, noInput, expirationCalendar.timeInMillis)
                         } else {
-                            viewModel.updateCard(activeItem.id, nameInput, noInput, expirationCalendar.timeInMillis)
+                            viewModel.updateCard(editingCard!!.id, nameInput, noInput, expirationCalendar.timeInMillis)
                         }
                         showDialog = false
                     }
-                }) { Text(if (editingCard == null) stringResource(id = R.string.opt_add) else stringResource(id = R.string.opt_save), style = MaterialTheme.typography.bodyLarge) }
+                ) { Text(if (editingCard == null) stringResource(id = R.string.opt_add) else stringResource(id = R.string.opt_save), style = AppDesignSystem.getBodyStyle()) }
             },
             dismissButton = {
                 Row {
@@ -178,9 +210,9 @@ fun CardsScreen(viewModel: CardsViewModel) {
                         TextButton(
                             colors = ButtonDefaults.textButtonColors(contentColor = Color.Red),
                             onClick = { showDeleteConfirm = true }
-                        ) { Text(stringResource(id = R.string.opt_del), style = MaterialTheme.typography.bodyLarge) }
+                        ) { Text(stringResource(id = R.string.opt_del), style = AppDesignSystem.getBodyStyle()) }
                     }
-                    TextButton(onClick = { showDialog = false }) { Text(stringResource(id = R.string.opt_cancel), style = MaterialTheme.typography.bodyLarge) }
+                    TextButton(onClick = { showDialog = false }) { Text(stringResource(id = R.string.opt_cancel), style = AppDesignSystem.getBodyStyle()) }
                 }
             }
         )
@@ -191,7 +223,7 @@ fun CardsScreen(viewModel: CardsViewModel) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(id = R.string.cards_del_title)) },
-            text = { Text(stringResource(id = R.string.cards_del_body, editingCard?.name ?: stringResource(id = R.string.cards_del_no_name)), style = MaterialTheme.typography.bodyLarge) },
+            text = { Text(stringResource(id = R.string.cards_del_body, editingCard?.name ?: stringResource(id = R.string.cards_del_no_name)), style = AppDesignSystem.getBodyStyle()) },
             confirmButton = {
                 Button(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
@@ -200,9 +232,9 @@ fun CardsScreen(viewModel: CardsViewModel) {
                         showDeleteConfirm = false
                         showDialog = false
                     }
-                ) { Text(stringResource(id = R.string.opt_yes), style = MaterialTheme.typography.bodyLarge) }
+                ) { Text(stringResource(id = R.string.opt_yes), style = AppDesignSystem.getBodyStyle()) }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(id = R.string.opt_cancel), style = MaterialTheme.typography.bodyLarge) } }
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(id = R.string.opt_cancel), style = AppDesignSystem.getBodyStyle()) } }
         )
     }
 }

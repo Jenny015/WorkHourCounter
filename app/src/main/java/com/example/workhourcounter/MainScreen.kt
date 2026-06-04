@@ -2,7 +2,6 @@ package com.example.workhourcounter
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -21,6 +20,7 @@ import com.example.workhourcounter.screens.CardsScreen
 import com.example.workhourcounter.screens.HomeScreen
 import com.example.workhourcounter.screens.StatisticsScreen
 import com.example.workhourcounter.screens.WorkplaceScreen
+import com.example.workhourcounter.ui.theme.AppDesignSystem
 import com.example.workhourcounter.viewModel.CardsViewModel
 import com.example.workhourcounter.viewModel.HomeViewModel
 import com.example.workhourcounter.viewModel.StatisticsViewModel
@@ -45,7 +45,7 @@ fun MainScreen() {
                 items.forEach { screen ->
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = stringResource(screen.title)) },
-                        label = {Text(text = stringResource(screen.title), style = MaterialTheme.typography.titleLarge)},
+                        label = {Text(text = stringResource(screen.title), style = AppDesignSystem.getBodyStyle())},
 
                         selected = currentRoute == screen.route,
                         onClick = {

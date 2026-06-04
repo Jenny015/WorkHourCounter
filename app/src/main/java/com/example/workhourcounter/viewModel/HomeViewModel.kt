@@ -8,7 +8,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import com.example.workhourcounter.data.DatabaseHelper
 import com.example.workhourcounter.data.WorkRecord
-import java.util.*
+import java.util.Calendar
+
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val dbHelper = DatabaseHelper(application)

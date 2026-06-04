@@ -47,4 +47,8 @@ class WorkplaceViewModel(application: Application) : AndroidViewModel(applicatio
     fun getRecordsForWorkplace(workplaceId: Long): List<WorkRecord> {
         return dbHelper.getRecordsForWorkplace(workplaceId)
     }
+
+    fun isNameDuplicate(name: String, excludeId: Long? = null): Boolean {
+        return dbHelper.isNameDuplicate(name, "wp", excludeId)
+    }
 }

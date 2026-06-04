@@ -9,6 +9,8 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import com.example.workhourcounter.Config
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -54,4 +56,59 @@ fun WorkHourCounterTheme(
         typography = Typography,
         content = content
     )
+}
+
+object AppDesignSystem {
+    // Consistent Typography Mapping Rule
+    @Composable
+    fun getTitleStyle(): TextStyle {
+        val base = MaterialTheme.typography.headlineMedium
+        return when (Config.fontSize) {
+            0 -> base
+            1 -> base.copy(fontSize = base.fontSize * 1.15f, lineHeight = base.lineHeight * 1.15f)
+            2 -> base.copy(fontSize = base.fontSize * 1.15f, lineHeight = base.lineHeight * 1.15f)
+            else -> {
+                base.copy(fontSize = base.fontSize * 1.15f, lineHeight = base.lineHeight * 1.15f)
+            }
+        }
+    }
+
+    @Composable
+    fun getSectionHeaderStyle(): TextStyle {
+        val base = MaterialTheme.typography.titleLarge
+        return when (Config.fontSize) {
+            0 -> base
+            1 -> base.copy(fontSize = base.fontSize * 1.15f, lineHeight = base.lineHeight * 1.15f)
+            2 -> base.copy(fontSize = base.fontSize * 1.35f, lineHeight = base.lineHeight * 1.25f)
+            else -> {
+                base.copy(fontSize = base.fontSize * 1.15f, lineHeight = base.lineHeight * 1.15f)
+            }
+        }
+    }
+
+    @Composable
+    fun getBodyStyle(n: Int = -1): TextStyle {
+        val base = MaterialTheme.typography.bodyMedium
+        val size = if (n == -1) Config.fontSize else n;
+        return when (size) {
+            0 -> base
+            1 -> base.copy(fontSize = base.fontSize * 1.15f, lineHeight = base.lineHeight * 1.15f)
+            2 -> base.copy(fontSize = base.fontSize * 1.55f, lineHeight = base.lineHeight * 1.25f)
+            else -> {
+                base.copy(fontSize = base.fontSize * 1.15f, lineHeight = base.lineHeight * 1.15f)
+            }
+        }
+    }
+
+    @Composable
+    fun getCalendarStyle(): TextStyle {
+        return when (Config.fontSize) {
+            0 -> MaterialTheme.typography.bodyMedium
+            1 -> MaterialTheme.typography.titleSmall
+            2 -> MaterialTheme.typography.titleLarge
+            else -> {
+                MaterialTheme.typography.titleSmall
+            }
+        }
+    }
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.workhourcounter.R
+import com.example.workhourcounter.ui.theme.AppDesignSystem
 import com.example.workhourcounter.viewModel.StatisticsViewModel
 
 @Composable
@@ -39,7 +39,7 @@ fun StatisticsScreen(viewModel: StatisticsViewModel) {
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            Text(text = stringResource(id = R.string.st_title), style = MaterialTheme.typography.headlineMedium)
+            Text(text = stringResource(id = R.string.st_title), style = AppDesignSystem.getTitleStyle())
         }
 
         // --- SEGMENT 1: LIFETIME OVERVIEW GRAND SCOREBOARD ---
@@ -51,12 +51,12 @@ fun StatisticsScreen(viewModel: StatisticsViewModel) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
-                            Text(stringResource(id = R.string.st_total_day), style = MaterialTheme.typography.titleMedium, color = Color.Gray)
-                            Text("${viewModel.totalDaysLogged} ${stringResource(id = R.string.unit_day)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text(stringResource(id = R.string.st_total_day), style = AppDesignSystem.getBodyStyle(), color = Color.Gray)
+                            Text("${viewModel.totalDaysLogged} ${stringResource(id = R.string.unit_day)}", style = AppDesignSystem.getSectionHeaderStyle(), fontWeight = FontWeight.Bold)
                         }
                         Column {
-                            Text(stringResource(id = R.string.st_total_hr), style = MaterialTheme.typography.titleMedium, color = Color.Gray)
-                            Text("${viewModel.lifetimeHours} ${stringResource(id = R.string.unit_hour)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text(stringResource(id = R.string.st_total_hr), style = AppDesignSystem.getBodyStyle(), color = Color.Gray)
+                            Text("${viewModel.lifetimeHours} ${stringResource(id = R.string.unit_hour)}", style = AppDesignSystem.getSectionHeaderStyle(), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -65,18 +65,16 @@ fun StatisticsScreen(viewModel: StatisticsViewModel) {
 
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(thickness = 1.dp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
         // --- SEGMENT 2: BREAKDOWN BY INDIVIDUAL WORKPLACE ---
         item {
-            Text(stringResource(id = R.string.st_per_wp), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(id = R.string.st_per_wp), style = AppDesignSystem.getSectionHeaderStyle(), fontWeight = FontWeight.Bold)
         }
 
         if (viewModel.workplaceStatsList.isEmpty()) {
             item {
-                Text(stringResource(id = R.string.st_no_record), color = Color.Gray, style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(id = R.string.st_no_record), color = Color.Gray, style = AppDesignSystem.getBodyStyle())
             }
         } else {
             items(viewModel.workplaceStatsList) { stat ->
@@ -87,11 +85,11 @@ fun StatisticsScreen(viewModel: StatisticsViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(stat.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text(stat.name, style = AppDesignSystem.getBodyStyle())
                         }
                         Text(
                             "${stat.totalHours} ${stringResource(id = R.string.unit_hour)}",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = AppDesignSystem.getBodyStyle(),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -101,18 +99,16 @@ fun StatisticsScreen(viewModel: StatisticsViewModel) {
 
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(thickness = 1.dp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
         // --- SEGMENT 3: MONTHLY HISTORY TRENDS ---
         item {
-            Text(stringResource(id = R.string.st_per_month), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(id = R.string.st_per_month), style = AppDesignSystem.getSectionHeaderStyle(), fontWeight = FontWeight.Bold)
         }
 
         if (viewModel.monthlyTrendList.isEmpty()) {
             item {
-                Text(stringResource(id = R.string.st_no_record), color = Color.Gray, style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(id = R.string.st_no_record), color = Color.Gray, style = AppDesignSystem.getBodyStyle())
             }
         } else {
             items(viewModel.monthlyTrendList) { entry ->
@@ -126,11 +122,11 @@ fun StatisticsScreen(viewModel: StatisticsViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(text = entry.monthLabel, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                            Text(text = entry.monthLabel, style = AppDesignSystem.getBodyStyle())
                         }
                         Text(
                             text = "${entry.hours} ${stringResource(id = R.string.unit_hour)}",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = AppDesignSystem.getBodyStyle(),
                             fontWeight = FontWeight.Bold
                         )
                     }

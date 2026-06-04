@@ -14,7 +14,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+// TODO: fontSize & baseWorkHour -> shared preference
+// TODO: Buttons content horizontal central alignment
 
-// TODO: Consist padding
-// TODO: Consist font size
-// TODO: Adjustiable font size
+// --- Advanced ---
+// TODO: base hour for each workplace
+// TODO: Location for each workplace -> click to open Google map
+// TODO: Cards stores Images
