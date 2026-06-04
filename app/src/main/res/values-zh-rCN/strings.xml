@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--  常规  -->
+    <string name="app_name">出勤记录</string>
+    <string name="opt_add">添加</string>
+    <string name="opt_save">保存</string>
+    <string name="opt_del">删除</string>
+    <string name="opt_cancel">取消</string>
+    <string name="opt_yes">确认</string>
+
+    <string name="unit_day">日</string>
+    <string name="unit_hour">小时</string>
+
+    <string name="wd_sun">日</string>
+    <string name="wd_mon">一</string>
+    <string name="wd_tue">二</string>
+    <string name="wd_wed">三</string>
+    <string name="wd_thu">四</string>
+    <string name="wd_fri">五</string>
+    <string name="wd_sat">六</string>
+
+    <!--  Screen  -->
+    <string name="screen_wp">地点</string>
+    <string name="screen_cards">证件</string>
+    <string name="screen_st">统计</string>
+
+    <!--  证件页面  -->
+    <string name="cards_title">工作证件</string>
+    <string name="cards_no_card">没有任何工作证件，请按右下角“+”添加。</string>
+    <string name="cards_expired_soon">⚠️ 即将过期</string>
+    <string name="cards_expired">⚠️ 已经过期</string>
+
+    <string name="cards_add_card">添加工作证件</string>
+    <string name="cards_edit_card">修改工作证件</string>
+
+    <string name="cards_name">证件名称</string>
+    <string name="cards_no">证件编号</string>
+    <string name="cards_expired_date">到期日</string>
+
+    <string name="cards_del_title">删除证件</string>
+    <string name="cards_del_body">确定要删除 \" %1$s \" 吗？</string>
+    <string name="cards_del_no_name">这张证件记录</string>
+
+    <!--  首页  -->
+    <string name="home_title">首页</string>
+    <string name="home_month_day">本月工作天数</string>
+    <string name="home_ot">本月加班时数</string>
+
+    <string name="home_add_record">添加工作记录</string>
+    <string name="home_edit_record">修改工作记录</string>
+    <string name="home_no_workplace">没有工作地点，请先前往下方“地点”页面添加工作地点。</string>
+
+    <string name="home_wp">工作地点</string>
+    <string name="home_wp_select">请选择工作地点</string>
+    <string name="home_t_full">全天</string>
+    <string name="home_t_half">半天</string>
+    <string name="home_t_custom">自定义</string>
+    <string name="home_basic_hour">基本工时</string>
+
+    <!--  统计页面  -->
+    <string name="st_title">统计数据</string>
+    <string name="st_total_day">总工作天数</string>
+    <string name="st_total_hr">总工作时数</string>
+    <string name="st_per_wp">工作地点工时</string>
+    <string name="st_no_record">没有出勤记录</string>
+    <string name="st_per_month">每月出勤记录</string>
+
+    <!--  工作地点页面  -->
+    <string name="wp_title">工作地点</string>
+
+    <string name="wp_s_working">主业</string>
+    <string name="wp_s_pending">副业</string>
+    <string name="wp_s_finished">已结束</string>
+
+    <string name="wp_edit_tips">🔧 点击工作地点进行编辑</string>
+    <string name="wp_del_tips">⚠️ 点击工作地点将其删除</string>
+    <string name="wp_check_tips">点击任意工作地点查看出勤记录</string>
+    <string name="wp_no_wp">没有任何工作地点，请按右下角“+”添加工作地点。</string>
+    <string name="wp_add">添加工作地点</string>
+    <string name="wp_edit">修改工作地点</string>
+
+    <string name="wp_name">名称</string>
+    <string name="wp_status">状态</string>
+    <string name="wp_record_title">出勤记录</string>
+
+    <string name="wp_no_record">此工作地点暂无任何出勤记录</string>
+    <string name="wp_del_title">删除工作地点</string>
+    <string name="wp_del_body">此操作将一并删除“%1$s”的所有出勤记录，确定要删除此工作地点吗？</string>
+    <string name="wp_del_input">请在下方输入“删除”以确认：</string>
+
+    <!--  证件到期通知  -->
+    <string name="cew_card_name">你的证件</string>
+    <string name="cew_msg">%1$s（%2$s）将在一个月后过期。</string>
+</resources>

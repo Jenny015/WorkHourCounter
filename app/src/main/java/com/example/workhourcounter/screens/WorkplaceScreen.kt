@@ -2,7 +2,16 @@ package com.example.workhourcounter.screens
 
 import android.icu.text.SimpleDateFormat
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -10,14 +19,38 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.workhourcounter.R
+import com.example.workhourcounter.data.StatusOption
 import com.example.workhourcounter.data.Workplace
 import com.example.workhourcounter.viewModel.WorkplaceViewModel
 import java.util.Date
@@ -28,7 +61,7 @@ enum class ExecutionMode { NORMAL, PENDING_EDIT, PENDING_DELETE }
 @Composable
 fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
     var workplaceName by remember { mutableStateOf("") }
-    var selectedStatus by remember { mutableStateOf("主力盤") }
+    var selectedStatus by remember { mutableStateOf(StatusOption.WORKING) }
     var statusDropdownExpanded by remember { mutableStateOf(false) }
 
     // Track deletion dialog state
@@ -37,8 +70,6 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
 
     var currentMode by remember { mutableStateOf(ExecutionMode.NORMAL) }
     var workplaceForHistory by remember { mutableStateOf<Workplace?>(null) }
-
-    val statusOptions = listOf("主力", "少去", "完工")
 
     // Dialog control states
     var isDialogOpen by remember { mutableStateOf(false) }
@@ -51,7 +82,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                 onClick = {
                     editingWorkplace = null
                     workplaceName = ""
-                    selectedStatus = "主力"
+                    selectedStatus = StatusOption.WORKING
                     isDialogOpen = true
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -70,7 +101,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("你的工作地點", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(id = R.string.wp_title), style = MaterialTheme.typography.headlineMedium)
                 Row {
                     // Edit Phase Toggle
                     IconButton(
@@ -108,14 +139,14 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
                     Text(
-                        text = if (currentMode == ExecutionMode.PENDING_EDIT) "🔧 點擊一個工作地點以編輯." else "⚠️ 點擊一個工作地點以刪除.",
+                        text = if (currentMode == ExecutionMode.PENDING_EDIT) stringResource(id = R.string.wp_edit_tips) else stringResource(id = R.string.wp_del_tips),
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally)
                     )
                 }
             }
             Text(
-                text = "點擊任意工作地點查看出勤記錄",
+                text = stringResource(id = R.string.wp_check_tips),
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -127,7 +158,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "未有任何工作地點，請先按右下角「＋」新增工作地點。",
+                        stringResource(id = R.string.wp_no_wp),
                         color = Color.Gray,
                         style = MaterialTheme.typography.titleLarge
                     )
@@ -147,7 +178,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                                     ExecutionMode.PENDING_EDIT -> {
                                         editingWorkplace = wp
                                         workplaceName = wp.name
-                                        selectedStatus = wp.status
+                                        selectedStatus = StatusOption.fromDbValue(wp.status)
                                         isDialogOpen = true
                                         currentMode = ExecutionMode.NORMAL // Clear immediately
                                     }
@@ -190,7 +221,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (editingWorkplace == null) "新增工作地點" else "修改工作地點",
+                            text = if (editingWorkplace == null) stringResource(id = R.string.wp_add) else stringResource(id = R.string.wp_edit),
                             style = MaterialTheme.typography.titleLarge
                         )
                         IconButton(onClick = { isDialogOpen = false }) {
@@ -204,7 +235,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                     OutlinedTextField(
                         value = workplaceName,
                         onValueChange = { workplaceName = it },
-                        label = { Text("地盤名稱 ", style = MaterialTheme.typography.bodyLarge) },
+                        label = { Text(stringResource(id = R.string.wp_name), style = MaterialTheme.typography.bodyLarge) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -214,15 +245,15 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                             onClick = { statusDropdownExpanded = true },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("狀態: $selectedStatus", style = MaterialTheme.typography.bodyLarge)
+                            Text("${stringResource(id = R.string.wp_status)}: ${stringResource(id = selectedStatus.labelResId)}", style = MaterialTheme.typography.bodyLarge)
                         }
                         DropdownMenu(
                             expanded = statusDropdownExpanded,
                             onDismissRequest = { statusDropdownExpanded = false }
                         ) {
-                            statusOptions.forEach { status ->
+                            StatusOption.entries.forEach { status ->
                                 DropdownMenuItem(
-                                    text = { Text(status, style = MaterialTheme.typography.bodyLarge) },
+                                    text = { Text(stringResource(id = status.labelResId), style = MaterialTheme.typography.bodyLarge) },
                                     onClick = {
                                         selectedStatus = status
                                         statusDropdownExpanded = false
@@ -238,20 +269,20 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                             if (workplaceName.isNotBlank()) {
                                 if (editingWorkplace == null) {
                                     // Process add query insertion frameworks pipelines
-                                    viewModel.addWorkplace(workplaceName, selectedStatus)
+                                    viewModel.addWorkplace(workplaceName, selectedStatus.dbValue)
                                 } else {
                                     // Process modify tracking index pipelines updates parameters
                                     viewModel.updateWorkplace(
                                         editingWorkplace!!.id,
                                         workplaceName,
-                                        selectedStatus
+                                        selectedStatus.dbValue
                                     )
                                 }
                                 isDialogOpen = false
                             }
                         }
                     ) {
-                        Text(text = if (editingWorkplace == null) "新增" else "保存")
+                        Text(text = if (editingWorkplace == null) stringResource(id = R.string.opt_add) else stringResource(id = R.string.opt_save))
                     }
                 }
             }
@@ -277,7 +308,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                         ) {
                             Column {
                                 Text(text = workplace.name, style = MaterialTheme.typography.titleLarge)
-                                Text(text = "出勤記錄", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
+                                Text(text = stringResource(id = R.string.wp_record_title), style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
                             }
                             IconButton(onClick = { workplaceForHistory = null }) {
                                 Icon(Icons.Default.Close, contentDescription = "關閉")
@@ -294,7 +325,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
 
                         if (records.isEmpty()) {
                             Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                                Text("此工作地點暫沒有任何出勤記錄", color = Color.Gray, style = MaterialTheme.typography.titleLarge)
+                                Text(stringResource(id = R.string.wp_no_record), color = Color.Gray, style = MaterialTheme.typography.titleLarge)
                             }
                         } else {
                             LazyColumn(
@@ -314,7 +345,7 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                                         )
                                         // Right side: Calculated cumulative work hours
                                         Text(
-                                            text = "${log.baseHours + log.otHours} 小時",
+                                            text = "${log.baseHours + log.otHours} ${stringResource(id = R.string.unit_hour)}",
                                             style = MaterialTheme.typography.titleLarge,
                                             color = MaterialTheme.colorScheme.secondary
                                         )
@@ -335,19 +366,19 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
         workplaceToDelete?.let { wp ->
             AlertDialog(
                 onDismissRequest = { workplaceToDelete = null },
-                title = { Text("注意: 刪除工作地點屬於不可撒消的操作") },
+                title = { Text(stringResource(id = R.string.wp_del_title)) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
-                            text = "此行為將一併刪除所有 \"${wp.name}\" 地盤的出勤記錄, 是否要刪除此工作地點?",
+                            text = stringResource(id = R.string.wp_del_body ,wp.name),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyLarge
                         )
-                        Text(text = "請在下方欄位輸入 \"刪除\" 以確認:", style = MaterialTheme.typography.bodyLarge)
+                        Text(text = stringResource(id = R.string.wp_del_input), style = MaterialTheme.typography.bodyLarge)
                         OutlinedTextField(
                             value = deleteConfirmationInput,
                             onValueChange = { deleteConfirmationInput = it },
-                            placeholder = { Text("刪除", style = MaterialTheme.typography.bodyLarge) },
+                            placeholder = { Text(stringResource(id = R.string.opt_del).lowercase(), style = MaterialTheme.typography.bodyLarge) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -356,21 +387,21 @@ fun WorkplaceScreen(viewModel: WorkplaceViewModel) {
                 confirmButton = {
                     Button(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        enabled = deleteConfirmationInput.trim() == "刪除",
+                        enabled = deleteConfirmationInput.trim().lowercase() == stringResource(id = R.string.opt_del),
                         onClick = {
                             viewModel.deleteWorkplace(wp.id)
                             // If we were editing this specific workplace, clear out the form
                             if (editingWorkplace!!.id == wp.id) {
                                 editingWorkplace = null
                                 workplaceName = ""
-                                selectedStatus = "主力"
+                                selectedStatus = StatusOption.WORKING
                             }
                             workplaceToDelete = null
                         }
-                    ) {Text("刪除工作地點", style = MaterialTheme.typography.bodyLarge)}
+                    ) {Text(stringResource(id = R.string.opt_del), style = MaterialTheme.typography.bodyLarge)}
                 },
                 dismissButton = {
-                    TextButton(onClick = { workplaceToDelete = null }) {Text("取消", style = MaterialTheme.typography.bodyLarge)}
+                    TextButton(onClick = { workplaceToDelete = null }) {Text(stringResource(id = R.string.opt_cancel), style = MaterialTheme.typography.bodyLarge)}
                 }
             )
         }
@@ -392,18 +423,18 @@ fun WorkplaceItemRow(workplace: Workplace, onCardClick: () -> Unit) {
                 Text(text = workplace.name, style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "狀態: ${workplace.status}",
+                    text = "${stringResource(id = R.string.wp_status)}: ${workplace.status}",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = when (workplace.status) {
-                        "主力" -> Color(0xFF035707)
-                        "少去" -> Color(0xFF021da6)
+                    color = when (StatusOption.fromDbValue(workplace.status)) {
+                        StatusOption.WORKING -> Color(0xFF035707)
+                        StatusOption.PENDING -> Color(0xFF021da6)
                         else -> Color(0xFF4d4d4d)
                     }
                 )
             }
             Column( horizontalAlignment = Alignment.End ) {
                 Text(
-                    text = "${workplace.totalDays} 日",
+                    text = "${workplace.totalDays} ${stringResource(id = R.string.unit_day)}",
                     style = MaterialTheme.typography.headlineMedium, // Bold prominent number
                     color = MaterialTheme.colorScheme.primary
                 )
