@@ -8,6 +8,7 @@
     <string name="opt_cancel">取消</string>
     <string name="opt_yes">确认</string>
 
+    <string name="opt_close">关闭</string>
     <string name="unit_day">日</string>
     <string name="unit_hour">小时</string>
 
@@ -43,8 +44,9 @@
 
     <!--  首页  -->
     <string name="home_title">首页</string>
+    <string name="home_prev_month">上个月</string>
     <string name="home_month_day">本月工作天数</string>
-    <string name="home_ot">本月加班时数</string>
+    <string name="home_ot">加班时数</string>
 
     <string name="home_add_record">添加工作记录</string>
     <string name="home_edit_record">修改工作记录</string>
@@ -72,6 +74,7 @@
     <string name="wp_s_pending">副业</string>
     <string name="wp_s_finished">已结束</string>
 
+    <string name="wp_del_mode">开启/关闭删除模式</string>
     <string name="wp_edit_tips">🔧 点击工作地点进行编辑</string>
     <string name="wp_del_tips">⚠️ 点击工作地点将其删除</string>
     <string name="wp_check_tips">点击任意工作地点查看出勤记录</string>
@@ -91,4 +94,6 @@
     <!--  证件到期通知  -->
     <string name="cew_card_name">你的证件</string>
     <string name="cew_msg">%1$s（%2$s）将在一个月后过期。</string>
+    <string name="wp_edit_mode">开启/关闭编辑模式</string>
+    <string name="home_next_month">下个月</string>
 </resources>

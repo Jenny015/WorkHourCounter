@@ -15,6 +15,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// TODO: Consist padding
-// TODO: Consist font size
-// TODO: Adjustiable font size
+// TODO: Buttons content horizontal central alignment
+// TODO: Modify basic working hours
+// TODO: Cards stores Images

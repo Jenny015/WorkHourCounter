@@ -55,6 +55,7 @@ import com.example.workhourcounter.R
 import com.example.workhourcounter.data.ShiftTypeOption
 import com.example.workhourcounter.data.StatusOption
 import com.example.workhourcounter.data.WorkRecord
+import com.example.workhourcounter.ui.theme.AppDesignSystem
 import com.example.workhourcounter.viewModel.HomeViewModel
 import com.example.workhourcounter.viewModel.WorkplaceViewModel
 import java.text.SimpleDateFormat
@@ -103,7 +104,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item{
-            Text(text = stringResource(id = R.string.home_title), style = MaterialTheme.typography.headlineMedium)
+            Text(text = stringResource(id = R.string.home_title), style = AppDesignSystem.getTitleStyle())
         }
 
         // --- CUSTOM CALENDAR TOP PANEL ---
@@ -120,12 +121,12 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                             val newCal = calendarViewDate.clone() as Calendar
                             newCal.add(Calendar.MONTH, -1)
                             calendarViewDate = newCal
-                        }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "上個月") }
+                        }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.home_prev_month)) }
 
                         // Fast Month Picker Action Trigger
                         Text(
                             text = monthFormat.format(calendarViewDate.time),
-                            style = MaterialTheme.typography.titleLarge,
+                            style = AppDesignSystem.getSectionHeaderStyle(),
                             modifier = Modifier.clickable {
                                 DatePickerDialog(
                                     context,
@@ -145,7 +146,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                             val newCal = calendarViewDate.clone() as Calendar
                             newCal.add(Calendar.MONTH, 1)
                             calendarViewDate = newCal
-                        }) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "下個月") }
+                        }) { Icon(Icons.AutoMirrored.Filled.ArrowForward, stringResource(R.string.home_next_month)) }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -203,19 +204,19 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
 
                     Card(modifier = Modifier.weight(1f)) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(stringResource(id = R.string.home_month_day), style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+                            Text(stringResource(id = R.string.home_month_day), style = AppDesignSystem.getBodyStyle(), color = Color.Gray)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "${if (totalDays % 1f == 0f) totalDays.toInt() else String.format(Locale.getDefault(), "%.1f", totalDays)} ${stringResource(id = R.string.unit_day)}",
-                                style = MaterialTheme.typography.headlineMedium
+                                style = AppDesignSystem.getSectionHeaderStyle()
                             )
                         }
                     }
                     Card(modifier = Modifier.weight(1f)) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(stringResource(id = R.string.home_ot), style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+                            Text(stringResource(id = R.string.home_ot), style = AppDesignSystem.getBodyStyle(), color = Color.Gray)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = "$totalOtHours ${stringResource(id = R.string.unit_hour)}", style = MaterialTheme.typography.headlineMedium)
+                            Text(text = "$totalOtHours ${stringResource(id = R.string.unit_hour)}", style = AppDesignSystem.getSectionHeaderStyle())
                         }
                     }
                 }
@@ -239,23 +240,23 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = if (existingRecordForDay == null) stringResource(id = R.string.home_add_record) else stringResource(id = R.string.home_edit_record),
-                                style = MaterialTheme.typography.titleLarge
+                                style = AppDesignSystem.getSectionHeaderStyle()
                             )
                             Text(
                                 text = dayTitleFormat.format(targetDayCal.time),
-                                style = MaterialTheme.typography.bodyLarge,
+                                style = AppDesignSystem.getBodyStyle(),
                                 color = Color.Gray
                             )
                         }
                         IconButton(onClick = { selectedCalendarDay = null }) {
-                            Icon(Icons.Default.Close, contentDescription = "Exit Dialog")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(id = R.string.opt_close))
                         }
                     }
 
                     HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
                     if (availableWorkplaces.isEmpty() && existingRecordForDay == null) {
-                        Text(stringResource(id = R.string.home_no_workplace), color = Color.Red, style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(id = R.string.home_no_workplace), color = Color.Red, style = AppDesignSystem.getSectionHeaderStyle())
                     } else {
                         // Workplace Target Selector Row
                         Box(modifier = Modifier.fillMaxWidth()) {
@@ -264,11 +265,11 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = existingRecordForDay == null // Keep workplace locked to avoid cross-shifting confusion
                             ) {
-                                Text("${stringResource(id = R.string.home_wp)}: ${targetWorkplace?.name ?: stringResource(id = R.string.home_wp_select)}", style = MaterialTheme.typography.bodyLarge)
+                                Text("${stringResource(id = R.string.home_wp)}: ${targetWorkplace?.name ?: stringResource(id = R.string.home_wp_select)}", style = AppDesignSystem.getBodyStyle())
                             }
                             DropdownMenu(expanded = activeWpDropdownExpanded, onDismissRequest = { activeWpDropdownExpanded = false }) {
                                 availableWorkplaces.forEach { wp ->
-                                    DropdownMenuItem(text = { Text(wp.name, style = MaterialTheme.typography.bodyLarge) }, onClick = { targetWorkplace = wp; activeWpDropdownExpanded = false })
+                                    DropdownMenuItem(text = { Text(wp.name, style = AppDesignSystem.getBodyStyle()) }, onClick = { targetWorkplace = wp; activeWpDropdownExpanded = false })
                                 }
                             }
                         }
@@ -296,7 +297,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                     label = {
                                         Text(
                                             text = stringResource(id = option.labelResId),
-                                            style = MaterialTheme.typography.titleMedium
+                                            style = AppDesignSystem.getBodyStyle()
                                         )
                                     }
                                 )
@@ -308,14 +309,16 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                             OutlinedTextField(
                                 value = manualBaseHours,
                                 onValueChange = { if (selectedShiftType == ShiftTypeOption.CUSTOM) manualBaseHours = it },
-                                label = { Text(stringResource(id = R.string.home_basic_hour), style = MaterialTheme.typography.bodyLarge) },
+                                label = { Text(stringResource(id = R.string.home_basic_hour), style = AppDesignSystem.getBodyStyle()) },
+                                textStyle = AppDesignSystem.getBodyStyle(),
                                 enabled = selectedShiftType == ShiftTypeOption.CUSTOM,
                                 modifier = Modifier.weight(1f)
                             )
                             OutlinedTextField(
                                 value = manualOtHours,
                                 onValueChange = { manualOtHours = it },
-                                label = { Text(stringResource(id = R.string.home_ot), style = MaterialTheme.typography.bodyLarge) },
+                                label = { Text(stringResource(id = R.string.home_ot), style = AppDesignSystem.getBodyStyle()) },
+                                textStyle = AppDesignSystem.getBodyStyle(),
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -333,7 +336,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                         selectedCalendarDay = null
                                     }
                                 ) {
-                                    Text(stringResource(id = R.string.opt_del), style = MaterialTheme.typography.bodyLarge)
+                                    Text(stringResource(id = R.string.opt_del), style = AppDesignSystem.getBodyStyle())
                                 }
                             } else {
                                 Spacer(modifier = Modifier.width(1.dp)) // Spacer placeholder layout balancing alignment
@@ -352,7 +355,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, workplaceViewModel: WorkplaceViewMo
                                     }
                                 }
                             ) {
-                                Text(if (existingRecordForDay == null) stringResource(id = R.string.opt_add) else stringResource(id = R.string.opt_save), style = MaterialTheme.typography.bodyLarge)
+                                Text(if (existingRecordForDay == null) stringResource(id = R.string.opt_add) else stringResource(id = R.string.opt_save), style = AppDesignSystem.getBodyStyle())
                             }
                         }
                     }
@@ -382,7 +385,7 @@ fun CalendarGridMatrix(calendarContext: Calendar, recordsList: List<WorkRecord>,
                 R.string.wd_fri,
                 R.string.wd_sat
             ).forEach { label ->
-                Text(text = stringResource(id = label), modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+                Text(text = stringResource(id = label), modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = AppDesignSystem.getCalendarStyle(), color = Color.Gray)
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
@@ -415,7 +418,7 @@ fun CalendarGridMatrix(calendarContext: Calendar, recordsList: List<WorkRecord>,
                             ) {
                                 Text(
                                     text = "$thisCellDayNum",
-                                    style = MaterialTheme.typography.titleLarge,
+                                    style = AppDesignSystem.getCalendarStyle(),
                                     color = if (hasRecord) MaterialTheme.colorScheme.primary else Color.Unspecified
                                 )
                                 // Render notification visual dot markers under day cell tracking index
