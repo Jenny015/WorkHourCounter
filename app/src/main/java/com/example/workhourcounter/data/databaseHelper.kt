@@ -20,11 +20,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val WP_START_DATE = "start_date"
         const val WP_STATUS = "status"
 
-        val WORKING = StatusOption.WORKING.dbValue
-        val PENDING = StatusOption.WORKING.dbValue
-        val FINISHED = StatusOption.FINISHED.dbValue
-
-
         // Record
         const val TABLE_RECORD = "work_record"
         const val REC_ID = "id"
@@ -108,18 +103,24 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         // SQL query sorting by status custom order, then by start date descending
         val query = """
-        SELECT * FROM $TABLE_WORKPLACE
-        ORDER BY 
-            CASE $WP_STATUS
-                WHEN '$WORKING' THEN 1
-                WHEN '$PENDING' THEN 2
-                WHEN '$FINISHED' THEN 3
-                ELSE 4
-            End ASC,
-            $WP_START_DATE DESC
-    """.trimIndent()
+            SELECT * FROM $TABLE_WORKPLACE
+            ORDER BY 
+                CASE $WP_STATUS
+                    WHEN ? THEN 1
+                    WHEN ? THEN 2
+                    WHEN ? THEN 3
+                    ELSE 4
+                END ASC,
+                $WP_START_DATE DESC
+        """.trimIndent()
 
-        val cursor = db.rawQuery(query, null)
+        val args = arrayOf(
+            StatusOption.WORKING.dbValue,
+            StatusOption.PENDING.dbValue,
+            StatusOption.FINISHED.dbValue
+        )
+
+        val cursor = db.rawQuery(query, args)
 
         if (cursor.moveToFirst()) {
             do {
