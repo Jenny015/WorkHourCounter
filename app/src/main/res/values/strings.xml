@@ -49,6 +49,9 @@
     <string name="cards_del_title">Card Deletion Confirm</string>
     <string name="cards_del_body">Are you sure you want to delete \" %1$s \" ?</string>
     <string name="cards_del_no_name">this card</string>
+
+    <string name="cards_copy_tips">Long press to copy card number</string>
+    <string name="cards_copy">has been copied into clipboard</string>
     <!--  Home Screen  -->
     <string name="home_title">Home</string>
 

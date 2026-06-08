@@ -1,7 +1,9 @@
 package com.example.workhourcounter.screens
 
 import android.app.DatePickerDialog
-import androidx.compose.foundation.clickable
+import android.content.ClipData
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,10 +35,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +52,7 @@ import com.example.workhourcounter.R
 import com.example.workhourcounter.ui.theme.AppDesignSystem
 import com.example.workhourcounter.viewModel.CardModel
 import com.example.workhourcounter.viewModel.CardsViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -76,6 +82,8 @@ fun CardsScreen(viewModel: CardsViewModel) {
         expirationCalendar.get(Calendar.YEAR), expirationCalendar.get(Calendar.MONTH), expirationCalendar.get(Calendar.DAY_OF_MONTH)
     )
 
+
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
@@ -93,6 +101,8 @@ fun CardsScreen(viewModel: CardsViewModel) {
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
             Text(text = stringResource(id = R.string.cards_title), style = AppDesignSystem.getTitleStyle())
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = stringResource(id = R.string.cards_copy_tips), style = AppDesignSystem.getBodyStyle())
             Spacer(modifier = Modifier.height(16.dp))
 
             if (viewModel.cardsList.isEmpty()) {
@@ -100,6 +110,9 @@ fun CardsScreen(viewModel: CardsViewModel) {
                     Text(stringResource(id = R.string.cards_no_card), color = Color.Gray, style = AppDesignSystem.getSectionHeaderStyle())
                 }
             } else {
+                val clipboardManager = LocalClipboard.current
+                val coroutineScope = rememberCoroutineScope()
+                val copiedLabelSuffix = stringResource(id = R.string.cards_copy)
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
                     items(viewModel.cardsList) { card ->
                         // Calculate time difference dynamically
@@ -115,14 +128,37 @@ fun CardsScreen(viewModel: CardsViewModel) {
                         } else {
                             MaterialTheme.colorScheme.surface
                         }
+                        @OptIn(ExperimentalFoundationApi::class)
                         Card(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                editingCard = card
-                                nameInput = card.name
-                                noInput = card.no
-                                expirationCalendar = Calendar.getInstance().apply { timeInMillis = card.expireDate }
-                                showDialog = true
-                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .combinedClickable(
+                                    onClick = {
+                                        editingCard = card
+                                        nameInput = card.name
+                                        noInput = card.no
+                                        expirationCalendar = Calendar.getInstance().apply { timeInMillis = card.expireDate }
+                                        showDialog = true
+                                    },
+                                    onLongClick = {
+                                        if (card.no.isNotBlank()) {
+                                            // 3. Move EVERYTHING async into the coroutine launch pool block
+                                            coroutineScope.launch {
+                                                val textToCopy: CharSequence = card.no
+                                                val nativeClip = ClipData.newPlainText("Card Number", textToCopy)
+                                                val composeClipEntry = ClipEntry(nativeClip)
+
+                                                clipboardManager.setClipEntry(composeClipEntry)
+
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    "${card.no} $copiedLabelSuffix",
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    }
+                                ),
                             colors = CardDefaults.cardColors(containerColor = cardBackgroundColor)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {

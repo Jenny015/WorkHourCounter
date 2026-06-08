@@ -44,6 +44,8 @@
     <string name="cards_del_no_name">這張證件記錄</string>
 
     <!--  Home Screen  -->
+    <string name="cards_copy_tips">長按複製卡號</string>
+    <string name="cards_copy">已複製到剪貼簿</string>
     <string name="home_title">首頁</string>
     <string name="home_prev_month">上個月</string>
     <string name="home_month_day">本月工作日數</string>

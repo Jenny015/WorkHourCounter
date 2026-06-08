@@ -45,6 +45,7 @@
     <string name="cards_del_no_name">这张证件记录</string>
 
     <!--  首页  -->
+    <string name="cards_copy">已复制到剪贴板</string>
     <string name="home_title">首页</string>
     <string name="home_prev_month">上个月</string>
     <string name="home_month_day">本月工作天数</string>
@@ -103,4 +104,5 @@
     <string name="home_fsize">字体大小</string>
     <string name="err_name_empty">名称不可为空</string>
     <string name="wp_name_duplicate">已存在相同名称的工作地点</string>
+    <string name="cards_copy_tips">长按复制卡号</string>
 </resources>
